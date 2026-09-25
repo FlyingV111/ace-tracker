@@ -1,0 +1,23 @@
+export const en = {
+  title: 'Video Analysis',
+  description: 'Clips, markers and video files.',
+  empty: 'No sync data yet.',
+  mediaTitle: 'Video files',
+  mediaHint:
+    'Large files stay with you (disk, link, or HiDrive). The project only stores the reference.',
+  mediaEmpty: 'No video linked yet.',
+  addLocal: 'Local file',
+  addLink: 'Paste link',
+  addHiDrive: 'From HiDrive',
+  addLinkPrompt: 'Paste a share or download URL:',
+  remove: 'Remove',
+  sourceLocal: 'Local',
+  sourceUrl: 'Link',
+  sourceCloud: 'Cloud',
+  hidriveBrowseTitle: 'HiDrive folder',
+  hidriveBrowseEmpty: 'Folder is empty.',
+  hidriveBrowseUp: 'Up one level',
+  hidriveBrowseNeedConnect: 'Connect HiDrive in Settings first.',
+  hidriveBrowseError: 'Could not load folder.',
+  hidrivePickFile: 'Attach to project',
+} as const

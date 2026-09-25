@@ -1,0 +1,23 @@
+export const de = {
+  title: 'Video Analysis',
+  description: 'Clips, Marker und Videodateien.',
+  empty: 'Noch keine Sync-Daten.',
+  mediaTitle: 'Videodateien',
+  mediaHint:
+    'Große Dateien bleiben bei dir (Festplatte, Link oder HiDrive). Im Projekt steht nur der Verweis.',
+  mediaEmpty: 'Noch kein Video verknüpft.',
+  addLocal: 'Lokale Datei',
+  addLink: 'Link einfügen',
+  addHiDrive: 'Aus HiDrive',
+  addLinkPrompt: 'Share- oder Download-URL einfügen:',
+  remove: 'Entfernen',
+  sourceLocal: 'Lokal',
+  sourceUrl: 'Link',
+  sourceCloud: 'Cloud',
+  hidriveBrowseTitle: 'HiDrive-Ordner',
+  hidriveBrowseEmpty: 'Ordner ist leer.',
+  hidriveBrowseUp: 'Eine Ebene hoch',
+  hidriveBrowseNeedConnect: 'Zuerst HiDrive in den Einstellungen verbinden.',
+  hidriveBrowseError: 'Ordner konnte nicht geladen werden.',
+  hidrivePickFile: 'An Projekt hängen',
+} as const

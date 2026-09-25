@@ -1,0 +1,26 @@
+{
+  "name": "ace-tracker",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Ace Tracker monorepo — desktop app and landing page",
+  "workspaces": [
+    "app",
+    "landing"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @ace-tracker/app",
+    "dev:web": "npm run dev:web -w @ace-tracker/app",
+    "dev:landing": "npm run dev -w @ace-tracker/landing",
+    "build": "npm run build -w @ace-tracker/app",
+    "build:web": "npm run build:web -w @ace-tracker/app",
+    "build:landing": "npm run build -w @ace-tracker/landing",
+    "preview": "npm run preview -w @ace-tracker/app",
+    "typecheck": "npm run typecheck -w @ace-tracker/app",
+    "package": "npm run package -w @ace-tracker/app",
+    "package:win": "npm run package:win -w @ace-tracker/app",
+    "package:mac": "npm run package:mac -w @ace-tracker/app",
+    "package:linux": "npm run package:linux -w @ace-tracker/app",
+    "release:win": "npm run release:win -w @ace-tracker/app",
+    "lint": "npm run lint -w @ace-tracker/app"
+  }
+}
