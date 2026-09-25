@@ -28,6 +28,8 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      # npm optional-deps bug: Windows lockfile can omit Linux rollup binary on CI
+      - run: npm install --no-save @rollup/rollup-linux-x64-gnu
       - name: Build landing
         env:
           VITE_BASE: /
