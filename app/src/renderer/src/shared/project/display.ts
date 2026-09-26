@@ -1,4 +1,4 @@
-import type { AceProject, MatchResult, ProjectDocument } from './types'
+import type { AceProject, MatchResult, ProjectDocument } from '../core/types'
 
 export function teamInitial(name: string): string {
   const trimmed = name.trim()
@@ -37,4 +37,40 @@ export function winnerTeamName(project: ProjectDocument): string | null {
 
 export function getAceMatchup(ace: AceProject): string | null {
   return projectMatchupLabel(ace.project)
+}
+
+export type MatchScoreDisplay = {
+  home: number
+  away: number
+  kind: 'sets' | 'points'
+}
+
+export function matchScore(ace: AceProject): MatchScoreDisplay | null {
+  const analysis = ace.tools['video-analysis']?.score
+  if (analysis) {
+    if (analysis.setsHome > 0 || analysis.setsAway > 0) {
+      return {
+        home: analysis.setsHome,
+        away: analysis.setsAway,
+        kind: 'sets',
+      }
+    }
+    if (analysis.home > 0 || analysis.away > 0) {
+      return { home: analysis.home, away: analysis.away, kind: 'points' }
+    }
+  }
+  const stored = ace.project.setsScore
+  if (
+    stored &&
+    Number.isFinite(stored.home) &&
+    Number.isFinite(stored.away)
+  ) {
+    return { home: stored.home, away: stored.away, kind: 'sets' }
+  }
+  return null
+}
+
+export function formatMatchScore(score: MatchScoreDisplay | null): string {
+  if (!score) return '–:–'
+  return `${score.home}:${score.away}`
 }

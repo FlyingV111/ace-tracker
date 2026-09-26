@@ -40,6 +40,9 @@ interface ElectronAPI {
   webdavDownload?: (
     payload: WebDavAuthPayload & { fileName: string },
   ) => Promise<WebDavDownloadResult>
+  openPath?: (
+    targetPath: string,
+  ) => Promise<{ ok: true } | { ok: false; error: string }>
 }
 
 declare global {

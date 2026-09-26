@@ -13,7 +13,7 @@ export function AceTrackerIcon({
   alt = '',
 }: AceTrackerIconProps) {
   const { resolvedTheme } = useWorkspace()
-  const src = resolvedTheme === 'dark' ? iconDark : iconLight
+  const src = resolvedTheme === 'dark' ? iconLight : iconDark
 
   return (
     <img

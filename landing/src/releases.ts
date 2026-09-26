@@ -76,7 +76,7 @@ export async function fetchLatestRelease(
 }
 
 export function formatBytes(bytes: number, locale: 'de' | 'en'): string {
-  if (!Number.isFinite(bytes) || bytes <= 0) return '—'
+  if (!Number.isFinite(bytes) || bytes <= 0) return '-'
   const units =
     locale === 'de'
       ? (['B', 'KB', 'MB', 'GB'] as const)

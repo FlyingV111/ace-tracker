@@ -1,5 +1,5 @@
 /**
- * Collaboration types — keep small on purpose.
+ * Collaboration types - keep small on purpose.
  */
 
 export type CollabPeer = {
@@ -10,10 +10,10 @@ export type CollabPeer = {
 export type CollabSessionInfo = {
   /** Short code people type or put in a Friend Link */
   roomCode: string
-  /** Shared secret — encrypts the peer channel (not sent as project data) */
+  /** Shared secret - encrypts the peer channel (not sent as project data) */
   passphrase: string
   /**
-   * Signaling WebSocket URLs (handshake only — no match/video content).
+   * Signaling WebSocket URLs (handshake only - no match/video content).
    * Empty = built-in defaults.
    */
   signalingUrls: string[]
@@ -50,14 +50,14 @@ export type CollabTestPing = {
   at: string
 }
 
-/** Public ephemeral signaling — only WebRTC handshake, no Ace Tracker content. */
+/** Public ephemeral signaling - only WebRTC handshake, no Ace Tracker content. */
 export const DEFAULT_SIGNALING_URLS = [
   'wss://signaling.yjs.dev',
 ] as const
 
 /**
  * Free public STUN + TURN (Open Relay / Metered community).
- * No Ace Tracker account, no paid plan — best-effort, not a SLA.
+ * No Ace Tracker account, no paid plan - best-effort, not a SLA.
  * Project JSON still goes P2P; TURN only relays encrypted WebRTC bytes if needed.
  */
 export const DEFAULT_ICE_SERVERS: RTCIceServer[] = [

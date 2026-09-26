@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   defaultRootPathForUser,
   hidriveConnectorFor,
@@ -12,23 +14,14 @@ import { probeHiDrive } from '@/shared/cloud/hidrive-api'
 import { useLocales } from '@/locales'
 import { projectsMessages } from '@/locales/pages/projects'
 
-/**
- * Connect STRATO HiDrive with username + password (WebDAV).
- * Optional: paste a share link for helpers.
- */
 export function HiDriveSettingsPanel() {
   const { settings, updateHiDrive } = useWorkspace()
   const t = useLocales(projectsMessages)
   const saved = settings.hidrive
-  const [username, setUsername] = useState(saved.username || 'flyingv111')
+  const [username, setUsername] = useState(saved.username)
   const [password, setPassword] = useState(saved.password)
-  const [rootPath, setRootPath] = useState(
-    saved.rootPath ||
-      '/users/flyingv111/Volleyball/Herzogenaurach/RAW/Kader',
-  )
-  const [shareUrl, setShareUrl] = useState(
-    saved.shareUrl || 'https://my.hidrive.com/share/s30a2on76h',
-  )
+  const [rootPath, setRootPath] = useState(saved.rootPath)
+  const [shareUrl, setShareUrl] = useState(saved.shareUrl)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -116,49 +109,60 @@ export function HiDriveSettingsPanel() {
         {t('hidriveHint')}
       </p>
 
-      <label className="grid gap-1 text-xs">
-        <span>{t('hidriveUsername')}</span>
-        <input
+      <div className="grid gap-1">
+        <Label htmlFor="hidrive-username" className="text-xs font-normal">
+          {t('hidriveUsername')}
+        </Label>
+        <Input
+          id="hidrive-username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           autoComplete="username"
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm"
-          placeholder="flyingv111"
+          className="h-10"
         />
-      </label>
+      </div>
 
-      <label className="grid gap-1 text-xs">
-        <span>{t('hidrivePassword')}</span>
-        <input
+      <div className="grid gap-1">
+        <Label htmlFor="hidrive-password" className="text-xs font-normal">
+          {t('hidrivePassword')}
+        </Label>
+        <Input
+          id="hidrive-password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+          className="h-10"
         />
-      </label>
+      </div>
 
-      <label className="grid gap-1 text-xs">
-        <span>{t('hidriveRootPath')}</span>
-        <input
+      <div className="grid gap-1">
+        <Label htmlFor="hidrive-root-path" className="text-xs font-normal">
+          {t('hidriveRootPath')}
+        </Label>
+        <Input
+          id="hidrive-root-path"
           value={rootPath}
           onChange={(e) => setRootPath(e.target.value)}
           onBlur={onPathBlur}
-          className="rounded-md border border-border bg-background px-3 py-2 font-mono text-xs"
-          placeholder="/users/flyingv111/Volleyball/…"
+          className="h-10 font-mono text-xs"
+          placeholder="/users/…"
         />
-      </label>
+      </div>
 
-      <label className="grid gap-1 text-xs">
-        <span>{t('hidriveShareUrl')}</span>
-        <input
+      <div className="grid gap-1">
+        <Label htmlFor="hidrive-share-url" className="text-xs font-normal">
+          {t('hidriveShareUrl')}
+        </Label>
+        <Input
+          id="hidrive-share-url"
           value={shareUrl}
           onChange={(e) => setShareUrl(e.target.value)}
           onBlur={onShareBlur}
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+          className="h-10"
           placeholder="https://my.hidrive.com/share/…"
         />
-      </label>
+      </div>
 
       <div className="flex flex-wrap gap-2">
         <Button

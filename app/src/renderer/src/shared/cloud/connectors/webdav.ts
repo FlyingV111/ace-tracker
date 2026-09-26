@@ -1,10 +1,5 @@
 import type { CloudConnector } from '../types'
 
-/**
- * Generic WebDAV — works for Strato, Nextcloud, many hosters.
- * Config (URL + user + password) comes later in settings; for now the
- * connector is listed so you can finish it without inventing a new shape.
- */
 export const webdavConnector: CloudConnector = {
   id: 'webdav',
   brand: 'webdav',
@@ -21,7 +16,4 @@ export const webdavConnector: CloudConnector = {
     de: 'Selbst hosten',
     en: 'Self-hosted',
   },
-  // Later:
-  // connect: async () => { read config, test PROPFIND },
-  // resolveMedia: async ({ remoteId }) => { GET file → cache path },
 }

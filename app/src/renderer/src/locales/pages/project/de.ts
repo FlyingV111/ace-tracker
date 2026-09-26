@@ -1,14 +1,14 @@
 export const de = {
   brand: 'Ace Tracker',
   back: 'Zurück',
-  backToProjects: 'Alle Projekte',
-  homeToProjects: 'Zur Projektübersicht',
-  pickMode: 'Wähle, womit du starten möchtest.',
+  backToProjects: 'Alle Spiele',
+  homeToProjects: 'Zur Spielübersicht',
+  pickMode: 'Wähle, womit du die Analyse starten möchtest.',
   comingSoon: 'Demnächst',
   comingSoonBody:
-    'Dieser Bereich kommt bald. Du kannst schon zwischen den Modi wechseln – aktuell ist Video Analysis verfügbar.',
-  toolTabs: 'Projekt-Modi',
-  projectTools: 'Was möchtest du machen?',
+    'Dieser Bereich kommt bald. Du kannst schon zwischen den Modi wechseln - aktuell ist Video Analysis verfügbar.',
+  toolTabs: 'Analyse-Modi',
+  projectTools: 'Was möchtest du analysieren?',
   exportFile: 'Speichern',
   playersCount: '{count} Spieler',
   eventsCount: '{count} Events',
@@ -19,11 +19,11 @@ export const de = {
   collabCreateSession: 'Session erstellen',
   collabJoinSession: 'Session beitreten',
   collabJoinHint:
-    'Raumcode oder Friend Link und Passwort eingeben. Beide öffnen dasselbe (oder ein leeres) Projekt.',
+    'Raumcode oder Friend Link und Passwort eingeben. Beide öffnen dasselbe (oder ein leeres) Spiel.',
   collabJoinConfirm: 'Beitreten',
   collabJoinMissing: 'Bitte Raumcode und Passwort eingeben.',
   collabReadyHint:
-    'Teile Raumcode und Passwort. Änderungen am Projekt laufen direkt zwischen euch (P2P).',
+    'Teile Raumcode und Passwort. Änderungen am Spiel laufen direkt zwischen euch (P2P).',
   collabPrivacyNote:
     'Match-Daten gehen nicht auf einen Ace-Tracker-Server. Verbindung ist Peer-to-Peer; Signaling nur für den Verbindungsaufbau.',
   collabStatusConnecting: 'Verbinde…',
@@ -34,7 +34,7 @@ export const de = {
   collabLeave: 'Session beenden',
   collabTestTitle: 'Verbindungstest',
   collabTestHint:
-    'Sende eine Nachricht — erscheint sie auf dem anderen PC, funktioniert Sync.',
+    'Sende eine Nachricht - erscheint sie auf dem anderen PC, funktioniert Sync.',
   collabTestPlaceholder: 'Hallo vom anderen Netz…',
   collabTestSend: 'Test senden',
   collabTestEmpty: 'Noch keine Test-Nachrichten.',

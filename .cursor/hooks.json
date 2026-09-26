@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterFileEdit": [
+      {
+        "command": "node .cursor/hooks/mark-edit.js"
+      }
+    ],
+    "stop": [
+      {
+        "command": "node .cursor/hooks/strip-comments-on-stop.js",
+        "loop_limit": 1
+      }
+    ]
+  }
+}

@@ -18,8 +18,8 @@ export function ToolShell({ title, description, children }: ToolShellProps) {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate('project')}
-          aria-label="Zurück zum Projekt"
+          onClick={() => navigate('game')}
+          aria-label="Zurück zum Spiel"
         >
           <ArrowLeft />
         </Button>

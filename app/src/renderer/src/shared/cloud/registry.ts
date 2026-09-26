@@ -16,7 +16,6 @@ export function getCloudConnector(
   return connectors.get(id)
 }
 
-/** Connectors meant for media / project files (everything except pure UI stubs). */
 export function listCloudProviders(): CloudConnector[] {
   return listCloudConnectors().filter(
     (c) =>

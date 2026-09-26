@@ -1,22 +1,29 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type SubmitEvent } from 'react'
 import {
   FolderOpen,
   FolderPlus,
   ImagePlus,
   LayoutGrid,
   List,
-  Plus,
   X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { AppNav, AppNavBrand } from '@/components/layout/AppNav'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { WorkspaceHomeNav } from '@/components/layout/WorkspaceHomeNav'
 import { ProjectTitleFields } from '@/components/project/ProjectTitleFields'
 import { ProjectCard } from '@/components/project/ProjectCard'
 import { TeamIcon } from '@/components/project/ProjectIcon'
 import {
   buildProjectTitle,
   fileToAvatarDataUrl,
-  projectLetterMark,
   useWorkspace,
   type MatchResult,
   type ProjectDateFormat,
@@ -24,9 +31,6 @@ import {
 import { useLocales } from '@/locales'
 import { projectsMessages } from '@/locales/pages/projects'
 import { cn } from '@/lib/utils'
-
-const fieldClass =
-  'h-10 w-full rounded-lg border border-border bg-background px-3.5 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
 
 export function ProjectsPage() {
   const {
@@ -37,6 +41,7 @@ export function ProjectsPage() {
     settings,
     updateProjectTitlePrefs,
     setProjectsViewMode,
+    navigate,
   } = useWorkspace()
   const t = useLocales(projectsMessages)
   const [creating, setCreating] = useState(false)
@@ -50,13 +55,11 @@ export function ProjectsPage() {
     () => settings.projectTitleDateFormat,
   )
   const [result, setResult] = useState<MatchResult>(null)
-  const [projectIcon, setProjectIcon] = useState<string | null>(null)
   const [homeIcon, setHomeIcon] = useState<string | null>(null)
   const [awayIcon, setAwayIcon] = useState<string | null>(null)
   const [iconError, setIconError] = useState<string | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
-  const projectIconRef = useRef<HTMLInputElement>(null)
   const homeIconRef = useRef<HTMLInputElement>(null)
   const awayIconRef = useRef<HTMLInputElement>(null)
 
@@ -69,12 +72,17 @@ export function ProjectsPage() {
       ? `${homeTeam.trim()} vs ${awayTeam.trim()}`
       : t('projectNamePlaceholder'))
 
+  useEffect(() => {
+    if (!creating || !activeWorkspace) return
+    setHomeTeam((prev) => prev || activeWorkspace.name)
+    setHomeIcon((prev) => prev ?? activeWorkspace.teamLogoDataUrl ?? null)
+  }, [creating, activeWorkspace])
+
   function resetForm() {
     setHomeTeam('')
     setAwayTeam('')
     setProjectName('')
     setResult(null)
-    setProjectIcon(null)
     setHomeIcon(null)
     setAwayIcon(null)
     setIconError(null)
@@ -104,7 +112,7 @@ export function ProjectsPage() {
     }
   }
 
-  function onCreate(event: FormEvent) {
+  function onCreate(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!canCreate || !activeWorkspace) return
     createProject({
@@ -117,7 +125,6 @@ export function ProjectsPage() {
         includeDate,
         dateFormat,
       }),
-      iconDataUrl: projectIcon,
       homeIconDataUrl: homeIcon,
       awayIconDataUrl: awayIcon,
       result,
@@ -135,9 +142,11 @@ export function ProjectsPage() {
     }
   }
 
+  const squadCount = activeWorkspace?.squad.length ?? 0
+
   return (
     <main className="flex min-h-svh w-full flex-col">
-      <AppNav center={<AppNavBrand>{t('brand')}</AppNavBrand>} />
+      <WorkspaceHomeNav brandFallback={t('brand')} />
 
       {!activeWorkspace ? (
         <div className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
@@ -156,16 +165,28 @@ export function ProjectsPage() {
                 {t('projectsTitle')}
               </h1>
               <p className="text-sm text-muted-foreground">{t('tagline')}</p>
+              {squadCount === 0 ? (
+                <button
+                  type="button"
+                  onClick={() => navigate('squad')}
+                  className="mt-2 text-left text-xs font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  {t('squadMissingHint')}
+                </button>
+              ) : (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('squadReadyHint', { count: squadCount })}
+                </p>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {!creating ? (
                 <>
-                  <Button size="sm" onClick={() => setCreating(true)}>
+                  <Button onClick={() => setCreating(true)}>
                     <FolderPlus data-icon="inline-start" />
                     {t('newProject')}
                   </Button>
                   <Button
-                    size="sm"
                     variant="outline"
                     onClick={() => fileRef.current?.click()}
                   >
@@ -262,10 +283,10 @@ export function ProjectsPage() {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <label className="space-y-1">
-                  <span className="text-xs text-muted-foreground">
+                <div className="space-y-1">
+                  <Label className="text-xs font-normal text-muted-foreground">
                     {t('homeTeam')}
-                  </span>
+                  </Label>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -274,11 +295,11 @@ export function ProjectsPage() {
                     >
                       <TeamIcon name={homeTeam} iconDataUrl={homeIcon} />
                     </button>
-                    <input
+                    <Input
                       value={homeTeam}
                       onChange={(event) => setHomeTeam(event.target.value)}
                       placeholder={t('homeTeamPlaceholder')}
-                      className={fieldClass}
+                      className="h-10"
                       autoFocus
                     />
                   </div>
@@ -291,11 +312,11 @@ export function ProjectsPage() {
                       void pickIcon(event.target.files?.[0], setHomeIcon)
                     }
                   />
-                </label>
-                <label className="space-y-1">
-                  <span className="text-xs text-muted-foreground">
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-normal text-muted-foreground">
                     {t('awayTeam')}
-                  </span>
+                  </Label>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -304,11 +325,11 @@ export function ProjectsPage() {
                     >
                       <TeamIcon name={awayTeam} iconDataUrl={awayIcon} />
                     </button>
-                    <input
+                    <Input
                       value={awayTeam}
                       onChange={(event) => setAwayTeam(event.target.value)}
                       placeholder={t('awayTeamPlaceholder')}
-                      className={fieldClass}
+                      className="h-10"
                     />
                   </div>
                   <input
@@ -320,7 +341,7 @@ export function ProjectsPage() {
                       void pickIcon(event.target.files?.[0], setAwayIcon)
                     }
                   />
-                </label>
+                </div>
               </div>
 
               <ProjectTitleFields
@@ -341,39 +362,42 @@ export function ProjectsPage() {
                 }}
               />
 
-              <label className="block space-y-1.5">
-                <span className="text-xs text-muted-foreground">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-normal text-muted-foreground">
                   {t('matchResult')}
-                </span>
-                <select
-                  value={result ?? ''}
-                  onChange={(event) => {
-                    const value = event.target.value
+                </Label>
+                <Select
+                  value={result ?? 'open'}
+                  onValueChange={(value) => {
                     setResult(
-                      value === ''
+                      value === 'open'
                         ? null
                         : (value as Exclude<MatchResult, null>),
                     )
                   }}
-                  className={fieldClass}
                 >
-                  <option value="">{t('resultOpen')}</option>
-                  <option value="home" disabled={!homeTeam.trim()}>
-                    {t('resultHome', {
-                      team: homeTeam.trim() || t('homeTeam'),
-                    })}
-                  </option>
-                  <option value="away" disabled={!awayTeam.trim()}>
-                    {t('resultAway', {
-                      team: awayTeam.trim() || t('awayTeam'),
-                    })}
-                  </option>
-                  <option value="draw">{t('resultDraw')}</option>
-                </select>
+                  <SelectTrigger className="h-10 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="open">{t('resultOpen')}</SelectItem>
+                    <SelectItem value="home" disabled={!homeTeam.trim()}>
+                      {t('resultHome', {
+                        team: homeTeam.trim() || t('homeTeam'),
+                      })}
+                    </SelectItem>
+                    <SelectItem value="away" disabled={!awayTeam.trim()}>
+                      {t('resultAway', {
+                        team: awayTeam.trim() || t('awayTeam'),
+                      })}
+                    </SelectItem>
+                    <SelectItem value="draw">{t('resultDraw')}</SelectItem>
+                  </SelectContent>
+                </Select>
                 <p className="text-[11px] text-muted-foreground">
                   {t('matchResultHint')}
                 </p>
-              </label>
+              </div>
 
               {iconError ? (
                 <p className="text-xs text-destructive">{iconError}</p>
@@ -408,12 +432,6 @@ export function ProjectsPage() {
 
           {projects.length === 0 && !creating ? (
             <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-6 py-12 text-center">
-              <span className="mb-4 flex size-12 items-center justify-center rounded-full bg-background ring-1 ring-foreground/10">
-                <Plus
-                  className="size-5 text-muted-foreground"
-                  strokeWidth={1.75}
-                />
-              </span>
               <h2 className="text-base font-semibold tracking-tight">
                 {t('projectsEmptyTitle')}
               </h2>
@@ -421,12 +439,11 @@ export function ProjectsPage() {
                 {t('projectsEmptyBody')}
               </p>
               <div className="mt-5 flex flex-wrap justify-center gap-2">
-                <Button size="sm" onClick={() => setCreating(true)}>
+                <Button onClick={() => setCreating(true)}>
                   <FolderPlus data-icon="inline-start" />
                   {t('newProject')}
                 </Button>
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() => fileRef.current?.click()}
                 >

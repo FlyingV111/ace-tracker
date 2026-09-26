@@ -38,4 +38,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('webdav:list', payload),
   webdavDownload: (payload: WebDavAuthPayload & { fileName: string }) =>
     ipcRenderer.invoke('webdav:download', payload),
+  openPath: (targetPath: string) =>
+    ipcRenderer.invoke('shell:openPath', targetPath),
 })

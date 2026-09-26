@@ -2,7 +2,7 @@
 
 Ace Tracker speichert **keine** Videos. Nutzer hängen ihren eigenen Speicher an.
 
-## HiDrive (Strato) — fertig nutzbar
+## HiDrive (Strato) - fertig nutzbar
 
 1. Einstellungen → HiDrive: Benutzername + Passwort
 2. Startordner z.B. `/users/deinname/…` (oder Browser-URL mit `#$/users/…` einfügen)

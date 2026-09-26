@@ -48,7 +48,7 @@ export function buildBaseProjectTitle(input: {
   const home = input.homeTeam.trim()
   const away = input.awayTeam.trim()
   if (home && away) return `${home} vs ${away}`
-  return home || away || 'Projekt'
+  return home || away || 'Spiel'
 }
 
 export function buildProjectTitle(input: {
@@ -62,7 +62,7 @@ export function buildProjectTitle(input: {
   const base = buildBaseProjectTitle(input)
   if (!input.includeDate) return base
   const stamp = formatProjectDate(input.date ?? new Date(), input.dateFormat)
-  return `${base} – ${stamp}`
+  return `${base} - ${stamp}`
 }
 
 export function previewProjectTitle(input: {
@@ -78,7 +78,7 @@ export function previewProjectTitle(input: {
   const custom = input.customName?.trim()
   if (!custom && !(home && away) && !home && !away) {
     if (!input.includeDate) return input.emptyLabel
-    return `${input.emptyLabel} – ${formatProjectDate(new Date(), input.dateFormat)}`
+    return `${input.emptyLabel} - ${formatProjectDate(new Date(), input.dateFormat)}`
   }
   return buildProjectTitle(input)
 }

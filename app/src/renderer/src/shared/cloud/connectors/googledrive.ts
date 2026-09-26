@@ -16,5 +16,4 @@ export const googleDriveConnector: CloudConnector = {
     de: 'Google',
     en: 'Google',
   },
-  // Later: connect() → OAuth, resolveMedia() → Drive API download
 }

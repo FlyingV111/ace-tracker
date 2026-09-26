@@ -5,6 +5,8 @@ export type {
   Workspace,
   WorkspaceSettings,
   Player,
+  PlayerMetricKind,
+  PlayerMetricSample,
   Team,
   MatchResult,
   LineupSlot,
@@ -17,21 +19,33 @@ export type {
   AceProject,
   PlayerTrackerDocument,
   LiveTrackingDocument,
+  EventCategory,
+  EventQuality,
+  EventStrength,
+  AnalysisScore,
+  ClipMeta,
+  AnalysisEvent,
   VideoAnalysisDocument,
   ProjectToolDocuments,
-} from './types'
+} from './core'
 export type {
   UserSettings,
   ThemeMode,
   ResolvedTheme,
-} from './settings'
-export { fileToAvatarDataUrl } from './settings'
+  ProjectsViewMode,
+  SquadViewMode,
+  HomeTab,
+  HiDriveConfig,
+} from './core'
+export { fileToAvatarDataUrl, isProjectsViewMode, isSquadViewMode, isHomeTab } from './core'
 export {
   resolveTheme,
   applyDocumentTheme,
   syncElectronThemePreference,
   isThemeMode,
-} from './theme'
+} from './core'
+export { createTranslator, createId } from './core'
+
 export {
   PROJECT_DATE_FORMATS,
   isProjectDateFormat,
@@ -40,12 +54,21 @@ export {
   buildProjectTitle,
   previewProjectTitle,
   type ProjectDateFormat,
-} from './project-title'
+  teamInitial,
+  projectLetterMark,
+  projectMatchupLabel,
+  resultLabelKey,
+  winnerTeamName,
+  getAceMatchup,
+  matchScore,
+  formatMatchScore,
+} from './project'
+export type { MatchScoreDisplay } from './project'
+
 export type {
   CloudConnector,
   CloudConnectorId,
   CloudConnectorStatus,
-  HiDriveConfig,
 } from './cloud'
 export {
   registerCloudConnector,
@@ -61,7 +84,7 @@ export {
   parseHiDriveConfig,
   hidriveConnectorFor,
 } from './cloud'
-// HiDrive network helpers: import from '@/shared/cloud/hidrive-api' (keeps Vite happy)
+
 export type {
   MediaAsset,
   MediaManifest,
@@ -79,6 +102,7 @@ export {
   mediaFromUrl,
   removeMediaItem,
 } from './media'
+
 export type {
   CollabConnectionState,
   CollabMessage,
@@ -98,10 +122,43 @@ export {
   DEFAULT_SIGNALING_URLS,
   DEFAULT_ICE_SERVERS,
 } from './collab'
-export { createTranslator } from './i18n'
-export { createId } from './id'
-export { WorkspaceProvider, useWorkspace } from './workspace-context'
-export { useToolStore } from './use-tool-store'
+
+export {
+  createWorkspace,
+  createPlayer,
+  mergePlayersIntoSquad,
+  rosterPlayersOnly,
+  WorkspaceProvider,
+  useWorkspace,
+  useToolStore,
+} from './workspace'
+export type { SetupBootstrap } from './workspace'
+
+export {
+  PLAYER_METRIC_KINDS,
+  PLAYER_SKILL_KINDS,
+  createMetricSample,
+  formatMetricValue,
+  latestMetricsByKey,
+  samplesForKey,
+  previousSample,
+  averageSkillRating,
+  metricUnit,
+  parseOptionalNumber,
+  isSkillMetricKind,
+  type BuiltinPlayerMetricKind,
+  type PlayerSkillKind,
+  PLAYER_POSITIONS,
+  isPlayerPositionId,
+  type PlayerPositionId,
+  aggregatePlayerSeasonStats,
+  receptionPositivePct,
+  attackEfficiency,
+  seasonHasAnyData,
+  type PlayerSeasonStats,
+  type SeasonMatchPoint,
+} from './player'
+
 export {
   createEmptyProject,
   packAceproj,
@@ -110,12 +167,7 @@ export {
   toAceprojFileName,
   isToolId,
   createEmptyToolDocuments,
-} from './aceproj'
-export {
-  teamInitial,
-  projectLetterMark,
-  projectMatchupLabel,
-  resultLabelKey,
-  winnerTeamName,
-  getAceMatchup,
-} from './project-display'
+  createEmptyVideoAnalysisDocument,
+  createEmptyAnalysisScore,
+  normalizeVideoAnalysisDocument,
+} from './fileformat'

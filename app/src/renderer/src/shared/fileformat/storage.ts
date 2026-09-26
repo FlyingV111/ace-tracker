@@ -4,17 +4,17 @@ import type {
   ProjectDocument,
   ProjectToolDocuments,
   ToolId,
-} from '../types'
+} from '../core/types'
 import {
   createEmptyMediaManifest,
   isMediaManifest,
 } from '../media'
-import { createEmptyToolDocuments, isToolId } from './tools'
+import { createEmptyToolDocuments, isToolId, normalizeVideoAnalysisDocument } from './tools'
 import {
   readPersistedJson,
   removePersistedJson,
   writePersistedJson,
-} from '../persistence'
+} from '../core/persistence'
 
 type StoredAceProject = {
   fileName: string
@@ -47,7 +47,7 @@ function base64ToBytes(base64: string): Uint8Array {
 }
 
 function normalizeAceProject(stored: StoredAceProject): AceProject {
-  const tools =
+  const rawTools =
     stored.tools ??
     createEmptyToolDocuments({
       playerTracker: {
@@ -61,6 +61,15 @@ function normalizeAceProject(stored: StoredAceProject): AceProject {
       },
       videoAnalysis: stored.sync,
     })
+
+  const video =
+    normalizeVideoAnalysisDocument(rawTools['video-analysis']) ??
+    createEmptyToolDocuments()['video-analysis']
+
+  const tools: ProjectToolDocuments = {
+    ...rawTools,
+    'video-analysis': video,
+  }
 
   const thumbnails: Record<string, Uint8Array> = {}
   for (const [path, base64] of Object.entries(stored.thumbnailsBase64 ?? {})) {

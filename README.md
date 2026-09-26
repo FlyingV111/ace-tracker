@@ -1,16 +1,16 @@
 # Ace Tracker
 
-Desktop-Workspace für Volleyball-Scouting und Match-Analyse — **local-first**, offline, ohne Cloud-Zwang und ohne Abo.
+Desktop-Workspace für Volleyball-Scouting und Match-Analyse - **local-first**, offline, ohne Cloud-Zwang und ohne Abo.
 
 Website: [ace-tracker.de](https://ace-tracker.de) · Downloads: [GitHub Releases](https://github.com/FlyingV111/ace-tracker/releases)
 
 ## Features
 
-- **Player Tracker** — Kader, Aufstellungen und Spielerdaten pflegen
-- **Live Game Tracking** — Events am Spielfeldrand erfassen
-- **Video Analysis** — Clips und Marker setzen (Videos bleiben lokal bzw. in deiner Cloud)
-- **Peer-to-Peer Kollaboration** — Session per Raumcode / Friend Link; Projektdaten syncen per WebRTC, ohne Ace-Tracker-Server
-- **Bring your own storage** — HiDrive (Strato) über WebDAV; weitere Anbieter geplant
+- **Player Tracker** - Kader, Aufstellungen und Spielerdaten pflegen
+- **Live Game Tracking** - Events am Spielfeldrand erfassen
+- **Video Analysis** - Clips und Marker setzen (Videos bleiben lokal bzw. in deiner Cloud)
+- **Peer-to-Peer Kollaboration** - Session per Raumcode / Friend Link; Projektdaten syncen per WebRTC, ohne Ace-Tracker-Server
+- **Bring your own storage** - HiDrive (Strato) über WebDAV; weitere Anbieter geplant
 
 Match-Inhalte und Videos liegen bei dir. Signaling/STUN/TURN laufen über freie öffentliche Dienste (Handshake only).
 
@@ -21,7 +21,7 @@ Unter Windows gibt es zwei Bauarten:
 | Artefakt | Beschreibung |
 |----------|----------------|
 | **Setup** | NSIS-Installer mit Startmenü, Desktop-Verknüpfung und Deinstallation |
-| **Portable** | Einzelne EXE — starten ohne Installation |
+| **Portable** | Einzelne EXE - starten ohne Installation |
 
 Aktuelle Builds erscheinen auf [ace-tracker.de](https://ace-tracker.de) und in den [Releases](https://github.com/FlyingV111/ace-tracker/releases), sobald ein Release veröffentlicht ist.
 
@@ -81,4 +81,4 @@ Weitere Hinweise liegen in den Modul-READMEs unter `app/src/renderer/src/shared/
 
 ## Lizenz
 
-Open Source — Nutzung und Weiterentwicklung im Sinne eines lokalen, datensparsamen Tools für Teams und Trainer.
+Open Source - Nutzung und Weiterentwicklung im Sinne eines lokalen, datensparsamen Tools für Teams und Trainer.

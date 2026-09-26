@@ -4,13 +4,13 @@ import type { ToolManifest } from '../types'
 export const playerTrackerManifest: ToolManifest = {
   id: 'player-tracker',
   icon: Users,
-  available: false,
+  available: true,
   title: {
-    de: 'Kader-Management',
-    en: 'Squad Management',
+    de: 'Aufstellung',
+    en: 'Lineup',
   },
   description: {
-    de: 'Kader verwalten, Spieler tracken und Aufstellungen pflegen.',
-    en: 'Manage the squad, track players and maintain lineups.',
+    de: 'Kader-Spieler für dieses Spiel referenzieren und Aufstellungen pflegen.',
+    en: 'Reference squad players for this match and maintain lineups.',
   },
 }

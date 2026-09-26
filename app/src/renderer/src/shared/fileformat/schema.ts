@@ -3,8 +3,8 @@ import type {
   MatchResult,
   ProjectDocument,
   SyncDocument,
-} from '../types'
-import { createId } from '../id'
+} from '../core/types'
+import { createId } from '../core/id'
 import { createEmptyMediaManifest } from '../media'
 import { createEmptyToolDocuments } from './tools'
 
@@ -47,6 +47,7 @@ export function createEmptyProjectDocument(
   extras?: {
     iconDataUrl?: string | null
     result?: MatchResult
+    setsScore?: { home: number; away: number } | null
   },
 ): ProjectDocument {
   const now = new Date().toISOString()
@@ -61,6 +62,7 @@ export function createEmptyProjectDocument(
     kickoff: null,
     iconDataUrl: extras?.iconDataUrl ?? null,
     result: extras?.result ?? null,
+    setsScore: extras?.setsScore ?? null,
     teams: {
       home: {
         id: 'home',
@@ -84,8 +86,8 @@ export function createEmptyProjectDocument(
 
 export function buildReadme(doc: ProjectDocument): string {
   return [
-    `Ace Tracker Project`,
-    `===================`,
+    `Ace Tracker Match`,
+    `=================`,
     ``,
     `Name:        ${doc.name}`,
     `ID:          ${doc.id}`,
@@ -94,15 +96,15 @@ export function buildReadme(doc: ProjectDocument): string {
     `Home:        ${doc.teams.home.name || '-'}`,
     `Away:        ${doc.teams.away.name || '-'}`,
     `Result:      ${doc.result ?? 'open'}`,
-    `Squad:       ${doc.squad.length} players`,
+    `Squad refs:  ${doc.squad.length} players`,
     `Events:      ${doc.events.length}`,
     `Score steps: ${doc.scoreHistory.length}`,
     ``,
     `Container layout:`,
-    `  project.json                 - match meta, teams`,
-    `  tools/player-tracker.json    - squad & lineups`,
+    `  project.json                 - match meta, teams, player refs`,
+    `  tools/player-tracker.json    - lineup slots (playerIds from workspace kader)`,
     `  tools/live-tracking.json     - live events & score`,
-    `  tools/video-analysis.json    - cameras, anchors, clips`,
+    `  tools/video-analysis.json    - clips, events, score, cameras`,
     `  media.json                   - video file references (not the videos)`,
     `  thumbnails/                  - preview stills`,
     `  README.txt                   - this file`,
@@ -121,6 +123,7 @@ export type CreateProjectInput = {
   awayIconDataUrl?: string | null
   iconDataUrl?: string | null
   result?: MatchResult
+  setsScore?: { home: number; away: number } | null
 }
 
 export function createEmptyProject(input: CreateProjectInput): AceProject {
@@ -128,7 +131,7 @@ export function createEmptyProject(input: CreateProjectInput): AceProject {
   const away = input.awayTeam.trim()
   const name =
     input.name?.trim() ||
-    (home && away ? `${home} vs ${away}` : home || away || 'Projekt')
+    (home && away ? `${home} vs ${away}` : home || away || 'Spiel')
 
   const project = createEmptyProjectDocument(
     name,
@@ -143,6 +146,7 @@ export function createEmptyProject(input: CreateProjectInput): AceProject {
     {
       iconDataUrl: input.iconDataUrl,
       result: input.result ?? null,
+      setsScore: input.setsScore ?? null,
     },
   )
   const tools = createEmptyToolDocuments()

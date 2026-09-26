@@ -4,6 +4,8 @@ import { CollabProvider } from '@/shared/collab'
 import '@/shared/cloud'
 import { OnboardingPage } from '@/pages/OnboardingPage'
 import { ProjectsPage } from '@/pages/ProjectsPage'
+import { SquadPage } from '@/pages/SquadPage'
+import { PlayerPage } from '@/pages/PlayerPage'
 import { ProjectLayout } from '@/pages/ProjectLayout'
 
 function AppRoutes() {
@@ -12,7 +14,7 @@ function AppRoutes() {
   useEffect(() => {
     window.electronAPI?.setSplashStatus?.(
       settings.setupComplete
-        ? 'Projekte werden geladen…'
+        ? 'Workspace wird geladen…'
         : 'Einrichtung wird vorbereitet…',
     )
 
@@ -28,11 +30,23 @@ function AppRoutes() {
     return <OnboardingPage />
   }
 
-  if (view === 'projects' || !activeWorkspace) {
+  if (!activeWorkspace) {
     return <ProjectsPage />
   }
 
-  if (view === 'project' || isToolId(view)) {
+  if (view === 'squad') {
+    return <SquadPage />
+  }
+
+  if (view === 'player') {
+    return <PlayerPage />
+  }
+
+  if (view === 'games') {
+    return <ProjectsPage />
+  }
+
+  if (view === 'game' || isToolId(view)) {
     if (activeProject) return <ProjectLayout />
     return <ProjectsPage />
   }

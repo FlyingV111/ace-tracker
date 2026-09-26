@@ -39,7 +39,7 @@ function forceWindowRepaint(win: BrowserWindow): void {
   if (win.isDestroyed() || !win.isVisible()) return
   win.setBackgroundColor(getWindowBackgroundColor())
   win.webContents.invalidate()
-  // Avoid setBounds while maximized – that would unmaximize the window.
+  // Avoid setBounds while maximized - that would unmaximize the window.
   if (win.isMaximized() || win.isFullScreen()) {
     const opacity = win.getOpacity()
     win.setOpacity(Math.min(opacity, 0.99))
@@ -65,18 +65,18 @@ function shouldUseDarkIcon(): boolean {
 }
 
 function resolveWindowIconPath(): string {
-  const dark = shouldUseDarkIcon()
+  const darkChrome = shouldUseDarkIcon()
   const candidates =
     process.platform === 'win32'
       ? [
-          dark ? 'icon-dark.ico' : 'icon-light.ico',
-          dark ? 'icon-dark.png' : 'icon-light.png',
+          darkChrome ? 'icon-light.ico' : 'icon-dark.ico',
+          darkChrome ? 'icon-light.png' : 'icon-dark.png',
           'icon.ico',
           'icon.png',
         ]
       : [
-          dark ? 'icon-dark.png' : 'icon-light.png',
-          dark ? 'icon-dark.ico' : 'icon-light.ico',
+          darkChrome ? 'icon-light.png' : 'icon-dark.png',
+          darkChrome ? 'icon-light.ico' : 'icon-dark.ico',
           'icon.png',
         ]
 
@@ -89,23 +89,35 @@ function resolveWindowIconPath(): string {
 }
 
 function resolveSplashIconPath(): string {
-  const dark = shouldUseDarkIcon()
-  const png = resolveResource(dark ? 'icon-dark.png' : 'icon-light.png')
+  const darkChrome = shouldUseDarkIcon()
+  const png = resolveResource(
+    darkChrome ? 'icon-light.png' : 'icon-dark.png',
+  )
   if (existsSync(png)) return png
   return resolveWindowIconPath()
 }
 
-function loadWindowIcon(): Electron.NativeImage | undefined {
-  const path = resolveWindowIconPath()
-  const image = nativeImage.createFromPath(path)
-  if (image.isEmpty()) return undefined
-  return image
+function windowIconOption(): { icon: string } | { icon: Electron.NativeImage } | object {
+  const iconPath = resolveWindowIconPath()
+  if (!existsSync(iconPath)) return {}
+  if (process.platform === 'win32') {
+    return { icon: iconPath }
+  }
+  const image = nativeImage.createFromPath(iconPath)
+  if (image.isEmpty()) return {}
+  return { icon: image }
 }
 
 function applyWindowIcon(win: BrowserWindow = mainWindow!): void {
   if (!win || win.isDestroyed()) return
-  const image = loadWindowIcon()
-  if (image) win.setIcon(image)
+  const iconPath = resolveWindowIconPath()
+  if (!existsSync(iconPath)) return
+  if (process.platform === 'win32') {
+    win.setIcon(iconPath)
+    return
+  }
+  const image = nativeImage.createFromPath(iconPath)
+  if (!image.isEmpty()) win.setIcon(image)
 }
 
 function updateSplashStatus(status: string): void {
@@ -128,7 +140,6 @@ function closeSplash(): void {
 }
 
 function createSplashWindow(): void {
-  const icon = loadWindowIcon()
   splashWindow = new BrowserWindow({
     width: 560,
     height: 420,
@@ -142,7 +153,7 @@ function createSplashWindow(): void {
     alwaysOnTop: true,
     skipTaskbar: true,
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#141414' : '#f7f7f8',
-    ...(icon ? { icon } : {}),
+    ...windowIconOption(),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -159,8 +170,6 @@ function createSplashWindow(): void {
 }
 
 function createMainWindow(): void {
-  const icon = loadWindowIcon()
-
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -169,7 +178,7 @@ function createMainWindow(): void {
     show: false,
     autoHideMenuBar: true,
     backgroundColor: getWindowBackgroundColor(),
-    ...(icon ? { icon } : {}),
+    ...windowIconOption(),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -178,7 +187,10 @@ function createMainWindow(): void {
     },
   })
 
+  applyWindowIcon(mainWindow)
+
   mainWindow.on('ready-to-show', () => {
+    applyWindowIcon(mainWindow!)
     updateSplashStatus('Oberfläche wird vorbereitet…')
   })
 
@@ -261,6 +273,16 @@ app.whenReady().then(() => {
   ipcMain.on('app:ready', () => {
     updateSplashStatus('Fertig')
     showMainWindow()
+  })
+
+  ipcMain.handle('shell:openPath', async (_event, targetPath: unknown) => {
+    if (typeof targetPath !== 'string' || !targetPath.trim()) {
+      return { ok: false as const, error: 'Ungültiger Pfad.' }
+    }
+    const error = await shell.openPath(targetPath.trim())
+    return error
+      ? { ok: false as const, error }
+      : { ok: true as const }
   })
 
   nativeTheme.on('updated', () => {

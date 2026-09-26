@@ -1,14 +1,14 @@
 export const en = {
   brand: 'Ace Tracker',
   back: 'Back',
-  backToProjects: 'All projects',
-  homeToProjects: 'Back to projects',
-  pickMode: 'Choose how you want to start.',
+  backToProjects: 'All matches',
+  homeToProjects: 'Back to matches',
+  pickMode: 'Choose how you want to start the analysis.',
   comingSoon: 'Coming soon',
   comingSoonBody:
-    'This area is coming soon. You can already switch modes – Video Analysis is available now.',
-  toolTabs: 'Project modes',
-  projectTools: 'What do you want to do?',
+    'This area is coming soon. You can already switch modes - Video Analysis is available now.',
+  toolTabs: 'Analysis modes',
+  projectTools: 'What do you want to analyse?',
   exportFile: 'Save',
   playersCount: '{count} players',
   eventsCount: '{count} events',
@@ -19,11 +19,11 @@ export const en = {
   collabCreateSession: 'Create session',
   collabJoinSession: 'Join session',
   collabJoinHint:
-    'Enter a room code or friend link and passphrase. Both should open the same (or an empty) project.',
+    'Enter a room code or friend link and passphrase. Both should open the same (or an empty) match.',
   collabJoinConfirm: 'Join',
   collabJoinMissing: 'Please enter a room code and passphrase.',
   collabReadyHint:
-    'Share the room code and passphrase. Project edits sync directly between you (P2P).',
+    'Share the room code and passphrase. Match edits sync directly between you (P2P).',
   collabPrivacyNote:
     'Match data is not stored on an Ace Tracker server. The link is peer-to-peer; signaling is only for connection setup.',
   collabStatusConnecting: 'Connecting…',
@@ -34,7 +34,7 @@ export const en = {
   collabLeave: 'End session',
   collabTestTitle: 'Connection test',
   collabTestHint:
-    'Send a message — if it shows on the other PC, sync is working.',
+    'Send a message - if it shows on the other PC, sync is working.',
   collabTestPlaceholder: 'Hello from another network…',
   collabTestSend: 'Send test',
   collabTestEmpty: 'No test messages yet.',

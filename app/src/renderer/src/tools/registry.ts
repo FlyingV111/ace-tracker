@@ -6,10 +6,6 @@ import {
   PlayerTrackerPage,
 } from '@/tools/player-tracker'
 import {
-  liveTrackingManifest,
-  LiveTrackingPage,
-} from '@/tools/live-tracking'
-import {
   videoAnalysisManifest,
   VideoAnalysisPage,
 } from '@/tools/video-analysis'
@@ -21,7 +17,7 @@ export type RegisteredTool = {
 
 export const toolRegistry: RegisteredTool[] = [
   { manifest: playerTrackerManifest, Page: PlayerTrackerPage },
-  { manifest: liveTrackingManifest, Page: LiveTrackingPage },
+  // { manifest: liveTrackingManifest, Page: LiveTrackingPage },
   { manifest: videoAnalysisManifest, Page: VideoAnalysisPage },
 ]
 

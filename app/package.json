@@ -10,6 +10,7 @@
   },
   "main": "./out/main/index.js",
   "scripts": {
+    "predev": "node -e \"const fs=require('fs');const p=require('path');const d=p.join(__dirname,'..','node_modules','electron');if(!fs.existsSync(p.join(d,'path.txt'))){require('child_process').execFileSync(process.execPath,[p.join(d,'install.js')],{stdio:'inherit'})}\"",
     "dev": "electron-vite dev",
     "dev:web": "vite",
     "build": "npm run typecheck && electron-vite build",

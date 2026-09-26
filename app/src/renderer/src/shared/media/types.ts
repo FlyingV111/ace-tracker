@@ -1,6 +1,6 @@
 /**
  * Video / media references stored IN the project.
- * The big file itself is NEVER inside .aceproj — only these pointers.
+ * The big file itself is NEVER inside .aceproj - only these pointers.
  */
 
 /** Where the bytes live (user's disk or user's cloud). */
@@ -36,7 +36,7 @@ export type MediaAsset = {
   sizeBytes: number | null
   /**
    * SHA-256 hex of the file contents.
-   * null until hashed — used so two people know they have the SAME file.
+   * null until hashed - used so two people know they have the SAME file.
    */
   contentHash: string | null
   /** One or more ways to find the same file. */

@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils'
-import { projectLetterMark } from '@/shared/project-display'
+import { projectLetterMark } from '@/shared/project'
 import type { ProjectDocument } from '@/shared'
 
 type ProjectIconProps = {

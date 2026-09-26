@@ -27,6 +27,7 @@ win:
         - x64
   icon: build/icon.ico
   executableName: Ace Tracker
+  signAndEditExecutable: true
 nsis:
   oneClick: false
   perMachine: false

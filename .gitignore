@@ -29,6 +29,12 @@ app/out
 *.sln
 *.sw?
 
-# Agent / local
-.cursor
+# Agent / local — keep shared hooks + rules, ignore ephemeral state
+.cursor/*
+!.cursor/hooks.json
+!.cursor/hooks/
+!.cursor/hooks/**
+.cursor/hooks/state/
+!.cursor/rules/
+!.cursor/rules/**
 agent-transcripts

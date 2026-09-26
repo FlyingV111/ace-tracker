@@ -2,7 +2,6 @@ import { useRef, useState, type ReactNode } from 'react'
 import {
   Check,
   FolderOpen,
-  FolderPlus,
   ImagePlus,
   Info,
   Languages,
@@ -15,13 +14,13 @@ import {
   Users,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { ProjectTitleFields } from '@/components/project/ProjectTitleFields'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { AceTrackerIcon } from '@/components/brand/AceTrackerIcon'
 import {
-  buildProjectTitle,
   useWorkspace,
   fileToAvatarDataUrl,
-  type ProjectDateFormat,
   type ThemeMode,
   type UserSettings,
   type Locale,
@@ -32,9 +31,6 @@ import { onboardingMessages } from '@/locales/pages/onboarding'
 type Step = 0 | 1 | 2 | 3 | 4
 
 const TOTAL_STEPS = 5
-
-const fieldClass =
-  'h-11 w-full rounded-lg border border-border bg-background px-3.5 text-sm outline-none placeholder:text-muted-foreground/70 focus-visible:ring-3 focus-visible:ring-ring/50'
 
 function OptionCard({
   selected,
@@ -104,24 +100,13 @@ export function OnboardingPage() {
   const [workspaceName, setWorkspaceName] = useState(
     () => settings.pendingWorkspaceName,
   )
-  const [homeTeam, setHomeTeam] = useState(() => settings.pendingHomeTeam)
-  const [awayTeam, setAwayTeam] = useState(() => settings.pendingAwayTeam)
-  const [projectName, setProjectName] = useState(
-    () => settings.pendingProjectName,
-  )
   const [folderNote, setFolderNote] = useState<string | null>(null)
-  const [folderSkipped, setFolderSkipped] = useState(
-    () => !settings.projectsFolderLabel && settings.setupStep >= 4,
-  )
   const [avatarError, setAvatarError] = useState<string | null>(null)
   const avatarRef = useRef<HTMLInputElement>(null)
 
   const t = translate(onboardingMessages, draft.locale)
   const nameOk = draft.displayName.trim().length > 0
   const workspaceOk = workspaceName.trim().length > 0
-  const teamsOk = homeTeam.trim().length > 0 && awayTeam.trim().length > 0
-  const folderOk = Boolean(draft.projectsFolderLabel) || folderSkipped
-  const projectOk = teamsOk && folderOk
 
   const steps = [
     {
@@ -150,9 +135,9 @@ export function OnboardingPage() {
     },
     {
       phase: 'setup' as const,
-      title: t('stepProjectTitle'),
-      desc: t('stepProjectDesc'),
-      icon: <FolderPlus className="size-4" />,
+      title: t('stepReadyTitle'),
+      desc: t('stepReadyDesc'),
+      icon: <FolderOpen className="size-4" />,
     },
   ] as const
 
@@ -161,7 +146,7 @@ export function OnboardingPage() {
     t('stepThemeHeading'),
     t('stepNameHeading'),
     t('stepWorkspaceHeading'),
-    t('stepProjectHeading'),
+    t('stepReadyHeading'),
   ] as const
 
   const bodies = [
@@ -169,7 +154,7 @@ export function OnboardingPage() {
     t('stepThemeBody'),
     t('stepNameBody'),
     t('stepWorkspaceBody'),
-    t('stepProjectBody'),
+    t('stepReadyBody'),
   ] as const
 
   async function pickFolder() {
@@ -181,7 +166,6 @@ export function OnboardingPage() {
 
     if (!picker) {
       setFolderNote(t('folderFallback'))
-      setFolderSkipped(true)
       setDraft((prev) => ({
         ...prev,
         projectsFolderLabel: null,
@@ -195,9 +179,9 @@ export function OnboardingPage() {
         ...prev,
         projectsFolderLabel: handle.name,
       }))
-      setFolderSkipped(false)
       setFolderNote(t('folderPicked', { name: handle.name }))
     } catch {
+      // user cancelled
     }
   }
 
@@ -226,9 +210,9 @@ export function OnboardingPage() {
       ...draft,
       displayName: draft.displayName.trim(),
       pendingWorkspaceName: workspaceName.trim(),
-      pendingHomeTeam: homeTeam.trim(),
-      pendingAwayTeam: awayTeam.trim(),
-      pendingProjectName: projectName.trim(),
+      pendingHomeTeam: '',
+      pendingAwayTeam: '',
+      pendingProjectName: '',
       setupComplete: false,
       setupStep: nextStep,
     }
@@ -237,7 +221,6 @@ export function OnboardingPage() {
   function canProceed(): boolean {
     if (step === 2) return nameOk
     if (step === 3) return workspaceOk
-    if (step === 4) return projectOk
     return true
   }
 
@@ -253,15 +236,6 @@ export function OnboardingPage() {
     }
     completeSetup(buildProgress(4), {
       workspaceName,
-      homeTeam,
-      awayTeam,
-      projectName: buildProjectTitle({
-        customName: projectName,
-        homeTeam,
-        awayTeam,
-        includeDate: draft.projectTitleIncludeDate,
-        dateFormat: draft.projectTitleDateFormat,
-      }),
     })
   }
 
@@ -474,24 +448,27 @@ export function OnboardingPage() {
                           </Button>
                         ) : null}
                       </div>
-                      <input
-                        ref={avatarRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(event) =>
-                          void onAvatarFile(event.target.files?.[0])
-                        }
-                      />
+                      {avatarError ? (
+                        <p className="text-xs text-destructive">{avatarError}</p>
+                      ) : null}
                     </div>
-                  </div>
-                  {avatarError ? (
-                    <p className="text-sm text-destructive">{avatarError}</p>
-                  ) : null}
-
-                  <label className="block space-y-2">
-                    <span className="text-sm font-semibold">{t('nameLabel')}</span>
                     <input
+                      ref={avatarRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(event) =>
+                        void onAvatarFile(event.target.files?.[0])
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="onboarding-name" className="text-sm font-semibold">
+                      {t('nameLabel')}
+                    </Label>
+                    <Input
+                      id="onboarding-name"
                       value={draft.displayName}
                       onChange={(event) =>
                         setDraft((prev) => ({
@@ -501,49 +478,33 @@ export function OnboardingPage() {
                       }
                       placeholder={t('namePlaceholder')}
                       autoFocus
-                      className={fieldClass}
+                      className="h-11"
                     />
-                  </label>
+                  </div>
                   <p className="text-xs leading-relaxed text-muted-foreground">
                     {nameOk ? t('nameHint') : t('nameRequired')}
                   </p>
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        isPlayer: !prev.isPlayer,
-                      }))
-                    }
-                    aria-pressed={draft.isPlayer}
-                    className={`flex w-full items-start gap-3 rounded-xl px-4 py-3.5 text-left ring-1 transition outline-none focus-visible:ring-3 focus-visible:ring-ring/50 ${
-                      draft.isPlayer
-                        ? 'bg-primary text-primary-foreground ring-primary'
-                        : 'bg-background ring-foreground/10 hover:bg-muted/40'
-                    }`}
-                  >
+                  <label className="flex w-full cursor-pointer items-start gap-3 rounded-xl border border-border bg-background px-4 py-3.5 text-left transition hover:bg-muted/40 has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50 has-[[data-checked]]:border-primary has-[[data-checked]]:bg-primary/5">
+                    <Checkbox
+                      checked={draft.isPlayer}
+                      onCheckedChange={(checked) =>
+                        setDraft((prev) => ({
+                          ...prev,
+                          isPlayer: checked === true,
+                        }))
+                      }
+                      className="mt-0.5"
+                    />
                     <span className="min-w-0 flex-1 space-y-0.5">
                       <span className="block text-sm font-semibold">
                         {t('isPlayerLabel')}
                       </span>
-                      <span
-                        className={`block text-xs leading-relaxed ${
-                          draft.isPlayer
-                            ? 'text-primary-foreground/80'
-                            : 'text-muted-foreground'
-                        }`}
-                      >
+                      <span className="block text-xs leading-relaxed text-muted-foreground">
                         {t('isPlayerHint')}
                       </span>
                     </span>
-                    {draft.isPlayer ? (
-                      <Check
-                        className="mt-0.5 size-3.5 shrink-0"
-                        strokeWidth={2.5}
-                      />
-                    ) : null}
-                  </button>
+                  </label>
 
                   <div className="flex gap-2.5 rounded-xl bg-muted/40 px-3.5 py-3 text-xs leading-relaxed text-muted-foreground">
                     <Shield className="mt-0.5 size-4 shrink-0" />
@@ -554,18 +515,22 @@ export function OnboardingPage() {
 
               {step === 3 ? (
                 <div className="space-y-4">
-                  <label className="block space-y-2">
-                    <span className="text-sm font-semibold">
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="onboarding-workspace"
+                      className="text-sm font-semibold"
+                    >
                       {t('workspaceLabel')}
-                    </span>
-                    <input
+                    </Label>
+                    <Input
+                      id="onboarding-workspace"
                       value={workspaceName}
                       onChange={(event) => setWorkspaceName(event.target.value)}
                       placeholder={t('workspacePlaceholder')}
                       autoFocus
-                      className={fieldClass}
+                      className="h-11"
                     />
-                  </label>
+                  </div>
                   <p className="text-xs leading-relaxed text-muted-foreground">
                     {workspaceOk ? t('workspaceHint') : t('workspaceRequired')}
                   </p>
@@ -574,63 +539,25 @@ export function OnboardingPage() {
 
               {step === 4 ? (
                 <div className="space-y-5">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="space-y-2">
-                      <span className="text-sm font-semibold">
-                        {t('homeTeam')}
-                      </span>
-                      <input
-                        value={homeTeam}
-                        onChange={(event) => setHomeTeam(event.target.value)}
-                        placeholder={t('homeTeamPlaceholder')}
-                        autoFocus
-                        className={fieldClass}
-                      />
-                    </label>
-                    <label className="space-y-2">
-                      <span className="text-sm font-semibold">
-                        {t('awayTeam')}
-                      </span>
-                      <input
-                        value={awayTeam}
-                        onChange={(event) => setAwayTeam(event.target.value)}
-                        placeholder={t('awayTeamPlaceholder')}
-                        className={fieldClass}
-                      />
-                    </label>
-                  </div>
-                  <ProjectTitleFields
-                    projectName={projectName}
-                    onProjectNameChange={setProjectName}
-                    homeTeam={homeTeam}
-                    awayTeam={awayTeam}
-                    includeDate={draft.projectTitleIncludeDate}
-                    onIncludeDateChange={(value) =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        projectTitleIncludeDate: value,
-                      }))
-                    }
-                    dateFormat={draft.projectTitleDateFormat}
-                    onDateFormatChange={(value: ProjectDateFormat) =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        projectTitleDateFormat: value,
-                      }))
-                    }
-                    labels={{
-                      titleOptional: t('projectNameOptional'),
-                      titlePlaceholder: t('projectNamePlaceholder'),
-                      includeDate: t('projectTitleIncludeDate'),
-                      dateFormat: t('projectTitleDateFormat'),
-                      preview: t('projectTitlePreview'),
-                    }}
-                  />
-                  {!teamsOk ? (
-                    <p className="text-xs text-muted-foreground">
-                      {t('projectTeamsRequired')}
-                    </p>
-                  ) : null}
+                  <ol className="space-y-3">
+                    {(
+                      [
+                        ['readyStep1', 'readyStep1Body'],
+                        ['readyStep2', 'readyStep2Body'],
+                        ['readyStep3', 'readyStep3Body'],
+                      ] as const
+                    ).map(([titleKey, bodyKey]) => (
+                      <li
+                        key={titleKey}
+                        className="rounded-xl border border-border bg-muted/20 px-4 py-3"
+                      >
+                        <p className="text-sm font-semibold">{t(titleKey)}</p>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                          {t(bodyKey)}
+                        </p>
+                      </li>
+                    ))}
+                  </ol>
 
                   <div className="rounded-xl border border-border bg-muted/30 p-4">
                     <div className="flex items-start gap-3">
@@ -669,11 +596,6 @@ export function OnboardingPage() {
                       </Button>
                     </div>
                   </div>
-                  {!folderOk ? (
-                    <p className="text-xs text-muted-foreground">
-                      {t('folderRequired')}
-                    </p>
-                  ) : null}
                 </div>
               ) : null}
             </div>

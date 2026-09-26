@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type SubmitEvent } from 'react'
 import { ImagePlus, MoreVertical, Settings2, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,9 +10,26 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { ProjectIcon, TeamIcon } from '@/components/project/ProjectIcon'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { TeamIcon } from '@/components/project/ProjectIcon'
 import {
   fileToAvatarDataUrl,
+  formatMatchScore,
+  matchScore,
   projectMatchupLabel,
   useWorkspace,
   winnerTeamName,
@@ -23,17 +40,27 @@ import { useLocales } from '@/locales'
 import { projectsMessages } from '@/locales/pages/projects'
 import { cn } from '@/lib/utils'
 
-const fieldClass =
-  'h-10 w-full rounded-lg border border-border bg-background px-3.5 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
-
 type ProjectCardProps = {
   ace: AceProject
   layout: 'tiles' | 'list'
 }
 
+function parseSetsField(value: string): number | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  const n = Number(trimmed)
+  if (!Number.isFinite(n) || n < 0) return null
+  return Math.floor(n)
+}
+
 export function ProjectCard({ ace, layout }: ProjectCardProps) {
-  const { openProject, updateProject, deleteProject } = useWorkspace()
+  const { openProject, updateProject, deleteProject, activeWorkspace } =
+    useWorkspace()
   const t = useLocales(projectsMessages)
+  const squadCount =
+    activeWorkspace && activeWorkspace.id === ace.workspaceId
+      ? activeWorkspace.squad.length
+      : ace.project.squad.length
   const [menuOpen, setMenuOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -41,8 +68,15 @@ export function ProjectCard({ ace, layout }: ProjectCardProps) {
   const [editResult, setEditResult] = useState<MatchResult>(
     ace.project.result ?? null,
   )
-  const [editIcon, setEditIcon] = useState<string | null>(
-    ace.project.iconDataUrl ?? null,
+  const [editSetsHome, setEditSetsHome] = useState(
+    ace.project.setsScore?.home != null
+      ? String(ace.project.setsScore.home)
+      : '',
+  )
+  const [editSetsAway, setEditSetsAway] = useState(
+    ace.project.setsScore?.away != null
+      ? String(ace.project.setsScore.away)
+      : '',
   )
   const [editHomeIcon, setEditHomeIcon] = useState<string | null>(
     ace.project.teams.home.iconDataUrl ?? null,
@@ -52,31 +86,28 @@ export function ProjectCard({ ace, layout }: ProjectCardProps) {
   )
   const [confirmName, setConfirmName] = useState('')
   const [iconError, setIconError] = useState<string | null>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
-  const projectIconRef = useRef<HTMLInputElement>(null)
   const homeIconRef = useRef<HTMLInputElement>(null)
   const awayIconRef = useRef<HTMLInputElement>(null)
 
   const matchup = projectMatchupLabel(ace.project)
   const winner = winnerTeamName(ace.project)
-  const resultOpen = !ace.project.result
-
-  useEffect(() => {
-    if (!menuOpen) return
-    function onPointerDown(event: MouseEvent) {
-      if (!menuRef.current?.contains(event.target as Node)) {
-        setMenuOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', onPointerDown)
-    return () => document.removeEventListener('mousedown', onPointerDown)
-  }, [menuOpen])
+  const score = matchScore(ace)
+  const scoreLabel = formatMatchScore(score)
 
   useEffect(() => {
     if (!settingsOpen) return
     setEditName(ace.project.name)
     setEditResult(ace.project.result ?? null)
-    setEditIcon(ace.project.iconDataUrl ?? null)
+    setEditSetsHome(
+      ace.project.setsScore?.home != null
+        ? String(ace.project.setsScore.home)
+        : '',
+    )
+    setEditSetsAway(
+      ace.project.setsScore?.away != null
+        ? String(ace.project.setsScore.away)
+        : '',
+    )
     setEditHomeIcon(ace.project.teams.home.iconDataUrl ?? null)
     setEditAwayIcon(ace.project.teams.away.iconDataUrl ?? null)
     setIconError(null)
@@ -99,75 +130,91 @@ export function ProjectCard({ ace, layout }: ProjectCardProps) {
     }
   }
 
-  function onSaveSettings(event: FormEvent) {
+  function onSaveSettings(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!editName.trim()) return
+    const homeSets = parseSetsField(editSetsHome)
+    const awaySets = parseSetsField(editSetsAway)
+    const setsScore =
+      homeSets === null && awaySets === null
+        ? null
+        : { home: homeSets ?? 0, away: awaySets ?? 0 }
     updateProject(ace.project.id, {
       name: editName,
       result: editResult,
-      iconDataUrl: editIcon,
+      setsScore,
       homeIconDataUrl: editHomeIcon,
       awayIconDataUrl: editAwayIcon,
     })
     setSettingsOpen(false)
   }
 
-  function onConfirmDelete(event: FormEvent) {
+  function onConfirmDelete(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     if (confirmName.trim() !== ace.project.name.trim()) return
     deleteProject(ace.project.id)
     setDeleteOpen(false)
   }
 
-  const menu = (
-    <div ref={menuRef} className="relative shrink-0">
-      <button
-        type="button"
-        aria-label={t('projectMenu')}
-        aria-expanded={menuOpen}
-        onClick={(event) => {
-          event.stopPropagation()
-          setMenuOpen((value) => !value)
-        }}
-        className="flex size-8 items-center justify-center rounded-lg text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+  const matchupVisual = (
+    <span className="flex items-center gap-2.5">
+      <TeamIcon
+        name={ace.project.teams.home.name}
+        iconDataUrl={ace.project.teams.home.iconDataUrl}
+        className={layout === 'list' ? 'size-9' : 'size-11'}
+      />
+      <span
+        className={cn(
+          'min-w-[2.75rem] text-center font-semibold tabular-nums tracking-tight',
+          layout === 'list' ? 'text-sm' : 'text-base',
+        )}
       >
-        <MoreVertical className="size-4" />
-      </button>
-      {menuOpen ? (
-        <div className="absolute top-full right-0 z-20 mt-1 w-44 rounded-xl border border-border bg-background p-1.5 shadow-lg">
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation()
-              setMenuOpen(false)
-              setSettingsOpen(true)
-            }}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm outline-none transition hover:bg-muted/60"
-          >
-            <Settings2 className="size-3.5 text-muted-foreground" />
-            {t('projectSettings')}
-          </button>
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation()
-              setMenuOpen(false)
-              setDeleteOpen(true)
-            }}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-destructive outline-none transition hover:bg-destructive/10"
-          >
-            <Trash2 className="size-3.5" />
-            {t('projectDelete')}
-          </button>
-        </div>
-      ) : null}
-    </div>
+        {scoreLabel}
+      </span>
+      <TeamIcon
+        name={ace.project.teams.away.name}
+        iconDataUrl={ace.project.teams.away.iconDataUrl}
+        className={layout === 'list' ? 'size-9' : 'size-11'}
+      />
+    </span>
+  )
+
+  const menu = (
+    <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label={t('projectMenu')}
+          onClick={(event) => event.stopPropagation()}
+          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <MoreVertical className="size-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuItem
+          onSelect={() => setSettingsOpen(true)}
+          className="gap-2"
+        >
+          <Settings2 className="size-3.5 text-muted-foreground" />
+          {t('projectSettings')}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          variant="destructive"
+          onSelect={() => setDeleteOpen(true)}
+          className="gap-2"
+        >
+          <Trash2 className="size-3.5" />
+          {t('projectDelete')}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 
   const badges = (
     <>
       <Badge variant="outline">
-        {t('playersCount', { count: ace.project.squad.length })}
+        {t('playersCount', { count: squadCount })}
       </Badge>
       <Badge variant="outline">
         {t('eventsCount', { count: ace.project.events.length })}
@@ -194,72 +241,21 @@ export function ProjectCard({ ace, layout }: ProjectCardProps) {
               <DialogDescription>{t('projectSettingsHint')}</DialogDescription>
             </DialogHeader>
 
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => projectIconRef.current?.click()}
-                className="outline-none"
+            <div className="space-y-1.5">
+              <Label
+                htmlFor={`project-name-${ace.project.id}`}
+                className="text-xs font-normal text-muted-foreground"
               >
-                {editIcon ? (
-                  <img
-                    src={editIcon}
-                    alt=""
-                    className="size-14 rounded-xl object-cover"
-                  />
-                ) : (
-                  <ProjectIcon
-                    project={{
-                      ...ace.project,
-                      name: editName,
-                      iconDataUrl: null,
-                    }}
-                    className="size-14"
-                  />
-                )}
-              </button>
-              <div className="space-y-1.5">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => projectIconRef.current?.click()}
-                >
-                  <ImagePlus data-icon="inline-start" />
-                  {t('projectIconChange')}
-                </Button>
-                {editIcon ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setEditIcon(null)}
-                  >
-                    {t('iconRemove')}
-                  </Button>
-                ) : null}
-              </div>
-              <input
-                ref={projectIconRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) =>
-                  void pickIcon(event.target.files?.[0], setEditIcon)
-                }
-              />
-            </div>
-
-            <label className="block space-y-1.5">
-              <span className="text-xs text-muted-foreground">
                 {t('projectName')}
-              </span>
-              <input
+              </Label>
+              <Input
+                id={`project-name-${ace.project.id}`}
                 value={editName}
                 onChange={(event) => setEditName(event.target.value)}
-                className={fieldClass}
+                className="h-10"
                 autoFocus
               />
-            </label>
+            </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
@@ -282,6 +278,7 @@ export function ProjectCard({ ace, layout }: ProjectCardProps) {
                     variant="outline"
                     onClick={() => homeIconRef.current?.click()}
                   >
+                    <ImagePlus data-icon="inline-start" />
                     {t('iconPick')}
                   </Button>
                 </div>
@@ -315,6 +312,7 @@ export function ProjectCard({ ace, layout }: ProjectCardProps) {
                     variant="outline"
                     onClick={() => awayIconRef.current?.click()}
                   >
+                    <ImagePlus data-icon="inline-start" />
                     {t('iconPick')}
                   </Button>
                 </div>
@@ -330,30 +328,65 @@ export function ProjectCard({ ace, layout }: ProjectCardProps) {
               </div>
             </div>
 
-            <label className="block space-y-1.5">
-              <span className="text-xs text-muted-foreground">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-normal text-muted-foreground">
+                {t('setsScore')}
+              </Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  inputMode="numeric"
+                  value={editSetsHome}
+                  onChange={(event) => setEditSetsHome(event.target.value)}
+                  placeholder={ace.project.teams.home.name || '0'}
+                  className="h-10"
+                  aria-label={t('setsScoreHome')}
+                />
+                <span className="text-sm font-semibold text-muted-foreground">
+                  :
+                </span>
+                <Input
+                  inputMode="numeric"
+                  value={editSetsAway}
+                  onChange={(event) => setEditSetsAway(event.target.value)}
+                  placeholder={ace.project.teams.away.name || '0'}
+                  className="h-10"
+                  aria-label={t('setsScoreAway')}
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                {t('setsScoreHint')}
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-normal text-muted-foreground">
                 {t('matchResult')}
-              </span>
-              <select
-                value={editResult ?? ''}
-                onChange={(event) => {
-                  const value = event.target.value
+              </Label>
+              <Select
+                value={editResult ?? 'open'}
+                onValueChange={(value) => {
                   setEditResult(
-                    value === '' ? null : (value as Exclude<MatchResult, null>),
+                    value === 'open'
+                      ? null
+                      : (value as Exclude<MatchResult, null>),
                   )
                 }}
-                className={fieldClass}
               >
-                <option value="">{t('resultOpen')}</option>
-                <option value="home">
-                  {t('resultHome', { team: ace.project.teams.home.name })}
-                </option>
-                <option value="away">
-                  {t('resultAway', { team: ace.project.teams.away.name })}
-                </option>
-                <option value="draw">{t('resultDraw')}</option>
-              </select>
-            </label>
+                <SelectTrigger className="h-10 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="open">{t('resultOpen')}</SelectItem>
+                  <SelectItem value="home">
+                    {t('resultHome', { team: ace.project.teams.home.name })}
+                  </SelectItem>
+                  <SelectItem value="away">
+                    {t('resultAway', { team: ace.project.teams.away.name })}
+                  </SelectItem>
+                  <SelectItem value="draw">{t('resultDraw')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             {iconError ? (
               <p className="text-xs text-destructive">{iconError}</p>
@@ -384,18 +417,22 @@ export function ProjectCard({ ace, layout }: ProjectCardProps) {
                 {t('projectDeleteHint', { name: ace.project.name })}
               </DialogDescription>
             </DialogHeader>
-            <label className="block space-y-1.5">
-              <span className="text-xs text-muted-foreground">
+            <div className="space-y-1.5">
+              <Label
+                htmlFor={`project-delete-${ace.project.id}`}
+                className="text-xs font-normal text-muted-foreground"
+              >
                 {t('projectDeleteConfirmLabel')}
-              </span>
-              <input
+              </Label>
+              <Input
+                id={`project-delete-${ace.project.id}`}
                 value={confirmName}
                 onChange={(event) => setConfirmName(event.target.value)}
                 placeholder={ace.project.name}
-                className={fieldClass}
+                className="h-10"
                 autoFocus
               />
-            </label>
+            </div>
             <DialogFooter>
               <Button
                 type="button"
@@ -427,7 +464,7 @@ export function ProjectCard({ ace, layout }: ProjectCardProps) {
             onClick={() => openProject(ace.project.id)}
             className="flex min-w-0 flex-1 items-center gap-3 px-3.5 py-3 text-left outline-none transition hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/50"
           >
-            <ProjectIcon project={ace.project} className="size-10" />
+            {matchupVisual}
             <span className="min-w-0 flex-1 space-y-0.5">
               <span className="block truncate text-sm font-semibold">
                 {ace.project.name}
@@ -462,7 +499,7 @@ export function ProjectCard({ ace, layout }: ProjectCardProps) {
             onClick={() => openProject(ace.project.id)}
             className="outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
-            <ProjectIcon project={ace.project} />
+            {matchupVisual}
           </button>
           {menu}
         </div>
@@ -479,7 +516,7 @@ export function ProjectCard({ ace, layout }: ProjectCardProps) {
               {matchup}
             </span>
           ) : null}
-          {!resultOpen && winner ? (
+          {winner ? (
             <span className="mt-1 text-xs font-medium text-foreground/80">
               {t('resultWinner', { team: winner })}
             </span>

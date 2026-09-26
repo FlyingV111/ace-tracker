@@ -1,46 +1,18 @@
-import { Check } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   PROJECT_DATE_FORMATS,
   previewProjectTitle,
   type ProjectDateFormat,
 } from '@/shared'
-
-const fieldClass =
-  'h-11 w-full rounded-lg border border-border bg-background px-3.5 text-sm outline-none placeholder:text-muted-foreground/70 focus-visible:ring-3 focus-visible:ring-ring/50'
-
-function ChoiceCard({
-  selected,
-  title,
-  onClick,
-  compact,
-}: {
-  selected: boolean
-  title: string
-  onClick: () => void
-  compact?: boolean
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={selected}
-      className={`flex w-full items-center gap-2.5 rounded-xl text-left ring-1 transition outline-none focus-visible:ring-3 focus-visible:ring-ring/50 ${
-        compact ? 'px-3 py-2.5' : 'px-4 py-3.5'
-      } ${
-        selected
-          ? 'bg-primary text-primary-foreground ring-primary'
-          : 'bg-background ring-foreground/10 hover:bg-muted/40'
-      }`}
-    >
-      <span className={`min-w-0 flex-1 font-medium ${compact ? 'text-xs' : 'text-sm'}`}>
-        {title}
-      </span>
-      {selected ? (
-        <Check className="size-3.5 shrink-0" strokeWidth={2.5} />
-      ) : null}
-    </button>
-  )
-}
 
 type ProjectTitleFieldsProps = {
   projectName: string
@@ -82,11 +54,11 @@ export function ProjectTitleFields({
 
   return (
     <div className="space-y-3">
-      <label className="block space-y-1.5">
-        <span className="text-xs text-muted-foreground">
+      <div className="space-y-1.5">
+        <Label className="text-xs font-normal text-muted-foreground">
           {labels.titleOptional}
-        </span>
-        <input
+        </Label>
+        <Input
           value={projectName}
           onChange={(event) => onProjectNameChange(event.target.value)}
           placeholder={
@@ -94,30 +66,41 @@ export function ProjectTitleFields({
               ? `${homeTeam.trim()} vs ${awayTeam.trim()}`
               : labels.titlePlaceholder
           }
-          className={fieldClass}
+          className="h-11"
         />
+      </div>
+
+      <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border px-3.5 py-3">
+        <Checkbox
+          checked={includeDate}
+          onCheckedChange={(checked) => onIncludeDateChange(checked === true)}
+          className="mt-0.5"
+        />
+        <span className="text-sm">{labels.includeDate}</span>
       </label>
 
-      <ChoiceCard
-        selected={includeDate}
-        title={labels.includeDate}
-        onClick={() => onIncludeDateChange(!includeDate)}
-      />
-
       {includeDate ? (
-        <div className="space-y-2">
-          <p className="text-xs text-muted-foreground">{labels.dateFormat}</p>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {PROJECT_DATE_FORMATS.map((format) => (
-              <ChoiceCard
-                key={format}
-                compact
-                selected={dateFormat === format}
-                title={format}
-                onClick={() => onDateFormatChange(format)}
-              />
-            ))}
-          </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-normal text-muted-foreground">
+            {labels.dateFormat}
+          </Label>
+          <Select
+            value={dateFormat}
+            onValueChange={(value) =>
+              onDateFormatChange(value as ProjectDateFormat)
+            }
+          >
+            <SelectTrigger className="h-10 w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PROJECT_DATE_FORMATS.map((format) => (
+                <SelectItem key={format} value={format}>
+                  {format}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       ) : null}
 

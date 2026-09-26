@@ -17,18 +17,20 @@ import {
   clearProjectsStorage,
   toAceprojFileName,
   unpackAceproj,
-} from './aceproj'
+} from '../fileformat'
 import type {
   AceProject,
   AppView,
   Locale,
   MatchResult,
   MediaManifest,
+  Player,
+  PlayerMetricKind,
   ProjectToolDocuments,
   ToolId,
   Workspace,
   WorkspaceSettings,
-} from './types'
+} from '../core/types'
 import {
   DEFAULT_USER_SETTINGS,
   loadUserSettings,
@@ -37,26 +39,26 @@ import {
   type UserSettings,
   type ThemeMode,
   type HiDriveConfig,
-} from './settings'
-import { clearAllPersistedData } from './persistence'
+} from '../core/settings'
+import { clearAllPersistedData } from '../core/persistence'
 import {
   applyDocumentTheme,
   resolveTheme,
   syncElectronThemePreference,
   type ResolvedTheme,
-} from './theme'
+} from '../core/theme'
 import {
+  createPlayer,
   createWorkspace,
   loadWorkspaces,
+  mergePlayersIntoSquad,
   saveWorkspaces,
   clearWorkspacesStorage,
-} from './workspaces'
+} from './store'
+import { createMetricSample, metricDayKey, metricSampleKey } from '../player/metrics'
 
 export type SetupBootstrap = {
   workspaceName: string
-  homeTeam: string
-  awayTeam: string
-  projectName?: string
 }
 
 type WorkspaceValue = {
@@ -72,6 +74,7 @@ type WorkspaceValue = {
   setTheme: (theme: ThemeMode) => void
   resolvedTheme: ResolvedTheme
   setProjectsViewMode: (mode: UserSettings['projectsViewMode']) => void
+  setSquadViewMode: (mode: UserSettings['squadViewMode']) => void
   saveSetupProgress: (settings: UserSettings) => void
   updateProfile: (profile: {
     displayName: string
@@ -85,14 +88,49 @@ type WorkspaceValue = {
   }) => void
   completeSetup: (settings: UserSettings, bootstrap: SetupBootstrap) => void
   navigate: (view: AppView) => void
+  selectedPlayerId: string | null
+  openPlayer: (playerId: string) => void
   createWorkspace: (name: string) => void
   openWorkspace: (id: string) => void
   updateWorkspace: (
     id: string,
-    patch: { name?: string; settings?: Partial<WorkspaceSettings> },
+    patch: {
+      name?: string
+      teamLogoDataUrl?: string | null
+      settings?: Partial<WorkspaceSettings>
+    },
   ) => void
   deleteWorkspace: (id: string) => void
   deleteAllData: () => void
+  addSquadPlayer: (input: {
+    name: string
+    number: number
+    position?: string
+    heightCm?: number | null
+    photoDataUrl?: string | null
+  }) => void
+  updateSquadPlayer: (
+    playerId: string,
+    patch: {
+      name?: string
+      number?: number
+      position?: string
+      heightCm?: number | null
+      photoDataUrl?: string | null
+    },
+  ) => void
+  removeSquadPlayer: (playerId: string) => void
+  addPlayerMetric: (
+    playerId: string,
+    input: {
+      kind: PlayerMetricKind
+      value: number
+      recordedAt?: string
+      label?: string
+      note?: string
+    },
+  ) => void
+  removePlayerMetric: (playerId: string, metricId: string) => void
   createProject: (input: {
     name?: string
     homeTeam: string
@@ -103,6 +141,7 @@ type WorkspaceValue = {
     awayIconDataUrl?: string | null
     iconDataUrl?: string | null
     result?: MatchResult
+    setsScore?: { home: number; away: number } | null
   }) => void
   updateProject: (
     id: string,
@@ -110,6 +149,7 @@ type WorkspaceValue = {
       name?: string
       iconDataUrl?: string | null
       result?: MatchResult
+      setsScore?: { home: number; away: number } | null
       homeIconDataUrl?: string | null
       awayIconDataUrl?: string | null
       homeTeam?: string
@@ -126,12 +166,14 @@ type WorkspaceValue = {
       | ProjectToolDocuments[T]
       | ((prev: ProjectToolDocuments[T]) => ProjectToolDocuments[T]),
   ) => void
-  /** Replace the media manifest for a project (videos are references only). */
+  updatePlayerTracker: (
+    next:
+      | ProjectToolDocuments['player-tracker']
+      | ((
+          prev: ProjectToolDocuments['player-tracker'],
+        ) => ProjectToolDocuments['player-tracker']),
+  ) => void
   setProjectMedia: (projectId: string, media: MediaManifest) => void
-  /**
-   * Apply a collab P2P snapshot (project meta + tools + media refs).
-   * Used when a peer sends updates — never includes video bytes.
-   */
   applyCollabSnapshot: (snapshot: {
     projectId: string
     project: AceProject['project']
@@ -144,6 +186,14 @@ type WorkspaceValue = {
 
 const WorkspaceContext = createContext<WorkspaceValue | null>(null)
 
+function collectProjectSquad(ace: AceProject): Player[] {
+  const fromProject = Array.isArray(ace.project.squad) ? ace.project.squad : []
+  const fromTool = Array.isArray(ace.tools?.['player-tracker']?.squad)
+    ? ace.tools['player-tracker'].squad
+    : []
+  return mergePlayersIntoSquad(fromProject, fromTool)
+}
+
 function loadInitialData(locale: Locale): {
   workspaces: Workspace[]
   projects: AceProject[]
@@ -151,19 +201,35 @@ function loadInitialData(locale: Locale): {
   let workspaces = loadWorkspaces()
   let projects = loadProjects()
   const orphans = projects.filter((p) => !p.workspaceId)
-  if (orphans.length === 0) return { workspaces, projects }
-
-  let targetId = workspaces[0]?.id
-  if (!targetId) {
-    const fallback = createWorkspace(
-      locale === 'de' ? 'Mein Verein' : 'My club',
+  if (orphans.length > 0) {
+    let targetId = workspaces[0]?.id
+    if (!targetId) {
+      const fallback = createWorkspace(
+        locale === 'de' ? 'Mein Verein' : 'My club',
+      )
+      workspaces = [fallback]
+      targetId = fallback.id
+    }
+    projects = projects.map((p) =>
+      p.workspaceId ? p : { ...p, workspaceId: targetId },
     )
-    workspaces = [fallback]
-    targetId = fallback.id
   }
-  projects = projects.map((p) =>
-    p.workspaceId ? p : { ...p, workspaceId: targetId },
-  )
+
+  workspaces = workspaces.map((workspace) => {
+    if (workspace.squad.length > 0) return workspace
+    const fromProjects = projects
+      .filter((ace) => ace.workspaceId === workspace.id)
+      .flatMap(collectProjectSquad)
+    if (fromProjects.length === 0) return workspace
+    return {
+      ...workspace,
+      squad: mergePlayersIntoSquad([], fromProjects, {
+        includeTemporary: false,
+      }),
+      updatedAt: new Date().toISOString(),
+    }
+  })
+
   return { workspaces, projects }
 }
 
@@ -177,11 +243,17 @@ function resolveInitialWorkspaceId(
   return workspaces[0]?.id ?? null
 }
 
+function touchWorkspace(workspace: Workspace): Workspace {
+  return { ...workspace, updatedAt: new Date().toISOString() }
+}
+
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<UserSettings>(() =>
     loadUserSettings(),
   )
-  const [view, setView] = useState<AppView>('projects')
+  const [view, setView] = useState<AppView>(
+    () => loadUserSettings().homeTab,
+  )
   const [initial] = useState(() => loadInitialData(loadUserSettings().locale))
   const [workspaces, setWorkspaces] = useState<Workspace[]>(
     () => initial.workspaces,
@@ -195,6 +267,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   )
   const [projects, setProjects] = useState<AceProject[]>(() => initial.projects)
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null)
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() =>
     resolveTheme(loadUserSettings().theme),
   )
@@ -277,6 +350,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [],
   )
 
+  const setSquadViewMode = useCallback(
+    (mode: UserSettings['squadViewMode']) => {
+      setSettings((prev) => ({ ...prev, squadViewMode: mode }))
+    },
+    [],
+  )
+
   const saveSetupProgress = useCallback((next: UserSettings) => {
     setSettings({ ...next, setupComplete: false })
   }, [])
@@ -324,12 +404,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const completeSetup = useCallback(
     (next: UserSettings, bootstrap: SetupBootstrap) => {
       const workspace = createWorkspace(bootstrap.workspaceName)
-      const ace = createEmptyProject({
-        workspaceId: workspace.id,
-        homeTeam: bootstrap.homeTeam,
-        awayTeam: bootstrap.awayTeam,
-        name: bootstrap.projectName,
-      })
       setSettings({
         ...next,
         setupComplete: true,
@@ -341,16 +415,30 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         pendingProjectName: '',
       })
       setWorkspaces((prev) => [workspace, ...prev])
-      setProjects((prev) => [ace, ...prev])
       setActiveWorkspaceId(workspace.id)
-      setActiveProjectId(ace.project.id)
-      setView('project')
+      setActiveProjectId(null)
+      setView('squad')
     },
     [],
   )
 
   const navigate = useCallback((next: AppView) => {
+    if (next === 'squad' || next === 'games') {
+      setActiveProjectId(null)
+      setSettings((prev) =>
+        prev.homeTab === next ? prev : { ...prev, homeTab: next },
+      )
+    }
+    if (next !== 'player') {
+      setSelectedPlayerId(null)
+    }
     setView(next)
+  }, [])
+
+  const openPlayer = useCallback((playerId: string) => {
+    setActiveProjectId(null)
+    setSelectedPlayerId(playerId)
+    setView('player')
   }, [])
 
   const handleCreateWorkspace = useCallback((name: string) => {
@@ -358,33 +446,47 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setWorkspaces((prev) => [workspace, ...prev])
     setActiveWorkspaceId(workspace.id)
     setActiveProjectId(null)
-    setSettings((prev) => ({ ...prev, lastWorkspaceId: workspace.id }))
-    setView('projects')
+    setSettings((prev) => ({
+      ...prev,
+      lastWorkspaceId: workspace.id,
+      homeTab: 'squad',
+    }))
+    setView('squad')
   }, [])
 
-  const openWorkspace = useCallback((id: string) => {
-    setActiveWorkspaceId(id)
-    setActiveProjectId(null)
-    setSettings((prev) => ({ ...prev, lastWorkspaceId: id }))
-    setView('projects')
-  }, [])
+  const openWorkspace = useCallback(
+    (id: string) => {
+      setActiveWorkspaceId(id)
+      setActiveProjectId(null)
+      setSettings((prev) => ({ ...prev, lastWorkspaceId: id }))
+      setView(settings.homeTab)
+    },
+    [settings.homeTab],
+  )
 
   const updateWorkspace = useCallback(
     (
       id: string,
-      patch: { name?: string; settings?: Partial<WorkspaceSettings> },
+      patch: {
+        name?: string
+        teamLogoDataUrl?: string | null
+        settings?: Partial<WorkspaceSettings>
+      },
     ) => {
       setWorkspaces((prev) =>
         prev.map((workspace) => {
           if (workspace.id !== id) return workspace
-          return {
+          return touchWorkspace({
             ...workspace,
             name: patch.name?.trim() || workspace.name,
+            teamLogoDataUrl:
+              patch.teamLogoDataUrl !== undefined
+                ? patch.teamLogoDataUrl
+                : workspace.teamLogoDataUrl,
             settings: patch.settings
               ? { ...workspace.settings, ...patch.settings }
               : workspace.settings,
-            updatedAt: new Date().toISOString(),
-          }
+          })
         }),
       )
     },
@@ -407,8 +509,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     })
     setProjects((prev) => prev.filter((project) => project.workspaceId !== id))
     setActiveProjectId(null)
-    setView('projects')
-  }, [])
+    setView(settings.homeTab)
+  }, [settings.homeTab])
 
   const deleteAllData = useCallback(() => {
     clearUserSettingsStorage()
@@ -420,8 +522,176 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setProjects([])
     setActiveWorkspaceId(null)
     setActiveProjectId(null)
-    setView('projects')
+    setView(DEFAULT_USER_SETTINGS.homeTab)
   }, [])
+
+  const addSquadPlayer = useCallback(
+    (input: {
+      name: string
+      number: number
+      position?: string
+      heightCm?: number | null
+      photoDataUrl?: string | null
+    }) => {
+      if (!activeWorkspaceId) return
+      const player = createPlayer(input)
+      setWorkspaces((prev) =>
+        prev.map((workspace) => {
+          if (workspace.id !== activeWorkspaceId) return workspace
+          return touchWorkspace({
+            ...workspace,
+            squad: [...workspace.squad, player],
+          })
+        }),
+      )
+    },
+    [activeWorkspaceId],
+  )
+
+  const updateSquadPlayer = useCallback(
+    (
+      playerId: string,
+      patch: {
+        name?: string
+        number?: number
+        position?: string
+        heightCm?: number | null
+        photoDataUrl?: string | null
+      },
+    ) => {
+      if (!activeWorkspaceId) return
+      setWorkspaces((prev) =>
+        prev.map((workspace) => {
+          if (workspace.id !== activeWorkspaceId) return workspace
+          return touchWorkspace({
+            ...workspace,
+            squad: workspace.squad.map((player) => {
+              if (player.id !== playerId) return player
+              return {
+                ...player,
+                name: patch.name?.trim() || player.name,
+                number:
+                  patch.number !== undefined && Number.isFinite(patch.number)
+                    ? Math.max(0, Math.floor(patch.number))
+                    : player.number,
+                position:
+                  patch.position !== undefined
+                    ? patch.position.trim()
+                    : player.position,
+                heightCm:
+                  patch.heightCm !== undefined
+                    ? patch.heightCm
+                    : player.heightCm,
+                photoDataUrl:
+                  patch.photoDataUrl !== undefined
+                    ? patch.photoDataUrl
+                    : player.photoDataUrl,
+              }
+            }),
+          })
+        }),
+      )
+    },
+    [activeWorkspaceId],
+  )
+
+  const removeSquadPlayer = useCallback(
+    (playerId: string) => {
+      if (!activeWorkspaceId) return
+      setWorkspaces((prev) =>
+        prev.map((workspace) => {
+          if (workspace.id !== activeWorkspaceId) return workspace
+          return touchWorkspace({
+            ...workspace,
+            squad: workspace.squad.filter((player) => player.id !== playerId),
+          })
+        }),
+      )
+    },
+    [activeWorkspaceId],
+  )
+
+  const addPlayerMetric = useCallback(
+    (
+      playerId: string,
+      input: {
+        kind: PlayerMetricKind
+        value: number
+        recordedAt?: string
+        label?: string
+        note?: string
+      },
+    ) => {
+      if (!activeWorkspaceId) return
+      const sample = createMetricSample(input)
+      const sampleKey = metricSampleKey(sample)
+      const sampleDay = metricDayKey(sample.recordedAt)
+      setWorkspaces((prev) =>
+        prev.map((workspace) => {
+          if (workspace.id !== activeWorkspaceId) return workspace
+          return touchWorkspace({
+            ...workspace,
+            squad: workspace.squad.map((player) => {
+              if (player.id !== playerId) return player
+              const metrics = [...(player.metrics ?? [])]
+              const existingIndex = metrics.findIndex(
+                (entry) =>
+                  metricSampleKey(entry) === sampleKey &&
+                  metricDayKey(entry.recordedAt) === sampleDay,
+              )
+              if (existingIndex >= 0) {
+                metrics[existingIndex] = {
+                  ...metrics[existingIndex],
+                  id: metrics[existingIndex].id,
+                  kind: sample.kind,
+                  value: sample.value,
+                  recordedAt: sample.recordedAt,
+                  ...(sample.label
+                    ? { label: sample.label }
+                    : metrics[existingIndex].label
+                      ? { label: metrics[existingIndex].label }
+                      : {}),
+                  ...(sample.note
+                    ? { note: sample.note }
+                    : metrics[existingIndex].note
+                      ? { note: metrics[existingIndex].note }
+                      : {}),
+                }
+                return { ...player, metrics }
+              }
+              metrics.push(sample)
+              return { ...player, metrics }
+            }),
+          })
+        }),
+      )
+    },
+    [activeWorkspaceId],
+  )
+
+  const removePlayerMetric = useCallback(
+    (playerId: string, metricId: string) => {
+      if (!activeWorkspaceId) return
+      setWorkspaces((prev) =>
+        prev.map((workspace) => {
+          if (workspace.id !== activeWorkspaceId) return workspace
+          return touchWorkspace({
+            ...workspace,
+            squad: workspace.squad.map((player) => {
+              if (player.id !== playerId) return player
+              return {
+                ...player,
+                metrics: (player.metrics ?? []).filter(
+                  (sample) => sample.id !== metricId,
+                ),
+              }
+            }),
+          })
+        }),
+      )
+    },
+    [activeWorkspaceId],
+  )
 
   const handleCreateProject = useCallback(
     (input: {
@@ -434,17 +704,30 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       awayIconDataUrl?: string | null
       iconDataUrl?: string | null
       result?: MatchResult
+      setsScore?: { home: number; away: number } | null
     }) => {
       if (!activeWorkspaceId) return
+      const squad = activeWorkspace?.squad ?? []
       const ace = createEmptyProject({
         ...input,
         workspaceId: activeWorkspaceId,
       })
-      setProjects((prev) => [ace, ...prev])
-      setActiveProjectId(ace.project.id)
-      setView('project')
+      const withSquad: AceProject = {
+        ...ace,
+        project: { ...ace.project, squad: squad.map((p) => ({ ...p })) },
+        tools: {
+          ...ace.tools,
+          'player-tracker': {
+            ...ace.tools['player-tracker'],
+            squad: squad.map((p) => ({ ...p })),
+          },
+        },
+      }
+      setProjects((prev) => [withSquad, ...prev])
+      setActiveProjectId(withSquad.project.id)
+      setView('game')
     },
-    [activeWorkspaceId],
+    [activeWorkspaceId, activeWorkspace?.squad],
   )
 
   const updateProject = useCallback(
@@ -454,6 +737,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         name?: string
         iconDataUrl?: string | null
         result?: MatchResult
+        setsScore?: { home: number; away: number } | null
         homeIconDataUrl?: string | null
         awayIconDataUrl?: string | null
         homeTeam?: string
@@ -477,6 +761,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                   : ace.project.iconDataUrl,
               result:
                 patch.result !== undefined ? patch.result : ace.project.result,
+              setsScore:
+                patch.setsScore !== undefined
+                  ? patch.setsScore
+                  : ace.project.setsScore,
               teams: {
                 home: {
                   ...ace.project.teams.home,
@@ -509,28 +797,48 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     (id: string) => {
       setProjects((prev) => prev.filter((ace) => ace.project.id !== id))
       setActiveProjectId((current) => (current === id ? null : current))
-      setView('projects')
+      setView(settings.homeTab)
     },
-    [],
+    [settings.homeTab],
   )
 
   const openProject = useCallback(
     (id: string) => {
+      const squad = activeWorkspace?.squad ?? []
+      if (squad.length > 0) {
+        setProjects((prev) =>
+          prev.map((ace) => {
+            if (ace.project.id !== id) return ace
+            const merged = mergePlayersIntoSquad(ace.project.squad, squad)
+            return {
+              ...ace,
+              project: { ...ace.project, squad: merged },
+              tools: {
+                ...ace.tools,
+                'player-tracker': {
+                  ...ace.tools['player-tracker'],
+                  squad: merged,
+                },
+              },
+            }
+          }),
+        )
+      }
       setActiveProjectId(id)
       const ace = projects.find((project) => project.project.id === id)
       if (ace?.lastToolId && isToolId(ace.lastToolId)) {
         setView(ace.lastToolId)
         return
       }
-      setView('project')
+      setView('game')
     },
-    [projects],
+    [projects, activeWorkspace?.squad],
   )
 
   const closeProject = useCallback(() => {
     setActiveProjectId(null)
-    setView('projects')
-  }, [])
+    setView(settings.homeTab)
+  }, [settings.homeTab])
 
   const enterTool = useCallback(
     (toolId: ToolId) => {
@@ -564,9 +872,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setProjects((prev) =>
         prev.map((ace) => {
           if (ace.project.id !== activeProjectId) return ace
-          const tools = ace.tools ?? createEmptyToolDocuments({
-            videoAnalysis: ace.sync,
-          })
+          const tools =
+            ace.tools ??
+            createEmptyToolDocuments({
+              videoAnalysis: ace.sync,
+            })
           const current = tools[toolId]
           const resolved =
             typeof next === 'function'
@@ -583,6 +893,49 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             sync: nextTools['video-analysis'],
             project: {
               ...ace.project,
+              updatedAt: new Date().toISOString(),
+            },
+          }
+        }),
+      )
+    },
+    [activeProjectId],
+  )
+
+  const updatePlayerTracker = useCallback(
+    (
+      next:
+        | ProjectToolDocuments['player-tracker']
+        | ((
+            prev: ProjectToolDocuments['player-tracker'],
+          ) => ProjectToolDocuments['player-tracker']),
+    ) => {
+      if (!activeProjectId) return
+      setProjects((prev) =>
+        prev.map((ace) => {
+          if (ace.project.id !== activeProjectId) return ace
+          const tools =
+            ace.tools ??
+            createEmptyToolDocuments({
+              videoAnalysis: ace.sync,
+            })
+          const current = tools['player-tracker']
+          const resolved =
+            typeof next === 'function' ? next(current) : next
+          return {
+            ...ace,
+            tools: { ...tools, 'player-tracker': resolved },
+            sync: tools['video-analysis'],
+            project: {
+              ...ace.project,
+              squad: resolved.squad.map((player) => ({
+                ...player,
+                metrics: player.metrics.map((sample) => ({ ...sample })),
+              })),
+              lineups: {
+                home: resolved.lineups.home.map((slot) => ({ ...slot })),
+                away: resolved.lineups.away.map((slot) => ({ ...slot })),
+              },
               updatedAt: new Date().toISOString(),
             },
           }
@@ -644,12 +997,26 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (!activeWorkspaceId) return
       const ace = await unpackAceproj(file)
       const scoped = { ...ace, workspaceId: activeWorkspaceId }
+      const importedSquad = collectProjectSquad(scoped)
+      if (importedSquad.length > 0) {
+        setWorkspaces((prev) =>
+          prev.map((workspace) => {
+            if (workspace.id !== activeWorkspaceId) return workspace
+            return touchWorkspace({
+              ...workspace,
+              squad: mergePlayersIntoSquad(workspace.squad, importedSquad, {
+                includeTemporary: false,
+              }),
+            })
+          }),
+        )
+      }
       setProjects((prev) => {
         const without = prev.filter((p) => p.project.id !== scoped.project.id)
         return [scoped, ...without]
       })
       setActiveProjectId(scoped.project.id)
-      setView('project')
+      setView('game')
     },
     [activeWorkspaceId],
   )
@@ -678,17 +1045,25 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setLocale,
       setTheme,
       setProjectsViewMode,
+      setSquadViewMode,
       saveSetupProgress,
       updateProfile,
       updateHiDrive,
       updateProjectTitlePrefs,
       completeSetup,
       navigate,
+      selectedPlayerId,
+      openPlayer,
       createWorkspace: handleCreateWorkspace,
       openWorkspace,
       updateWorkspace,
       deleteWorkspace,
       deleteAllData,
+      addSquadPlayer,
+      updateSquadPlayer,
+      removeSquadPlayer,
+      addPlayerMetric,
+      removePlayerMetric,
       createProject: handleCreateProject,
       updateProject,
       deleteProject,
@@ -696,6 +1071,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       closeProject,
       enterTool,
       updateToolData,
+      updatePlayerTracker,
       setProjectMedia,
       applyCollabSnapshot,
       importAceproj,
@@ -710,20 +1086,28 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       workspaceProjects,
       activeProject,
       projectCountByWorkspace,
+      selectedPlayerId,
       setLocale,
       setTheme,
       setProjectsViewMode,
+      setSquadViewMode,
       saveSetupProgress,
       updateProfile,
       updateHiDrive,
       updateProjectTitlePrefs,
       completeSetup,
       navigate,
+      openPlayer,
       handleCreateWorkspace,
       openWorkspace,
       updateWorkspace,
       deleteWorkspace,
       deleteAllData,
+      addSquadPlayer,
+      updateSquadPlayer,
+      removeSquadPlayer,
+      addPlayerMetric,
+      removePlayerMetric,
       handleCreateProject,
       updateProject,
       deleteProject,
@@ -731,6 +1115,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       closeProject,
       enterTool,
       updateToolData,
+      updatePlayerTracker,
       setProjectMedia,
       applyCollabSnapshot,
       importAceproj,

@@ -1,14 +1,14 @@
 import type { Locale } from './types'
-import type { CloudConnectorId } from './cloud'
+import type { CloudConnectorId } from '../cloud'
 import {
   DEFAULT_HIDRIVE_CONFIG,
   parseHiDriveConfig,
   type HiDriveConfig,
-} from './cloud/hidrive-config'
+} from '../cloud/hidrive-config'
 import {
   isProjectDateFormat,
   type ProjectDateFormat,
-} from './project-title'
+} from '../project/title'
 import { isThemeMode, type ThemeMode } from './theme'
 import {
   readPersistedJson,
@@ -18,12 +18,22 @@ import {
 
 export type { ThemeMode } from './theme'
 export type ResolvedTheme = import('./theme').ResolvedTheme
-export type { HiDriveConfig } from './cloud/hidrive-config'
+export type { HiDriveConfig } from '../cloud/hidrive-config'
 
 export type ProjectsViewMode = 'tiles' | 'list'
+export type SquadViewMode = 'cards' | 'table'
+export type HomeTab = 'squad' | 'games'
 
 export function isProjectsViewMode(value: unknown): value is ProjectsViewMode {
   return value === 'tiles' || value === 'list'
+}
+
+export function isSquadViewMode(value: unknown): value is SquadViewMode {
+  return value === 'cards' || value === 'table'
+}
+
+export function isHomeTab(value: unknown): value is HomeTab {
+  return value === 'squad' || value === 'games'
 }
 
 export type UserSettings = {
@@ -32,12 +42,14 @@ export type UserSettings = {
   locale: Locale
   theme: ThemeMode
   projectsViewMode: ProjectsViewMode
+  squadViewMode: SquadViewMode
+  homeTab: HomeTab
   displayName: string
   avatarDataUrl: string | null
   isPlayer: boolean
   projectsFolderLabel: string | null
   cloudConnectorId: CloudConnectorId | null
-  /** HiDrive login — stays on this device only. */
+  /** HiDrive login - stays on this device only. */
   hidrive: HiDriveConfig
   lastWorkspaceId: string | null
   pendingWorkspaceName: string
@@ -54,6 +66,8 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   locale: 'de',
   theme: 'system',
   projectsViewMode: 'tiles',
+  squadViewMode: 'cards',
+  homeTab: 'squad',
   displayName: '',
   avatarDataUrl: null,
   isPlayer: false,
@@ -99,6 +113,12 @@ export function parseUserSettings(raw: unknown): UserSettings {
     projectsViewMode: isProjectsViewMode(parsed.projectsViewMode)
       ? parsed.projectsViewMode
       : DEFAULT_USER_SETTINGS.projectsViewMode,
+    squadViewMode: isSquadViewMode(parsed.squadViewMode)
+      ? parsed.squadViewMode
+      : DEFAULT_USER_SETTINGS.squadViewMode,
+    homeTab: isHomeTab(parsed.homeTab)
+      ? parsed.homeTab
+      : DEFAULT_USER_SETTINGS.homeTab,
     displayName:
       typeof parsed.displayName === 'string' ? parsed.displayName : '',
     avatarDataUrl,

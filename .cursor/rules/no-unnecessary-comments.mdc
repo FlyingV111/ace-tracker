@@ -1,0 +1,12 @@
+---
+description: Keine unnötigen Kommentare im Code hinterlassen
+alwaysApply: true
+---
+
+# Keine unnötigen Kommentare
+
+Beim Schreiben oder Ändern von Code keine Noise-Kommentare erzeugen.
+
+**Nicht schreiben:** Tutorial-/Essay-JSDoc, Property-Docs die nur den Namen wiederholen, Abschnittskommentare (`// Push local edits`), auskommentierten Stub-Code, „Later:“-Platzhalter.
+
+**Erlaubt:** `/// <reference …>`, kurze Catch-Marker (`// ignore`, `// fall through`), kurze WHY-Kommentare für nicht-offensichtliches Verhalten (Workarounds, Legacy, Plattform-Bugs).

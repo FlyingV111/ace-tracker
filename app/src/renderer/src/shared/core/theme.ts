@@ -33,8 +33,8 @@ export function applyDocumentTheme(resolved: ResolvedTheme): void {
   favicon.dataset.appIcon = '1'
   favicon.href =
     resolved === 'dark'
-      ? '/ace-tracker-icon-dark.png'
-      : '/ace-tracker-icon-light.png'
+      ? '/ace-tracker-icon-light.png'
+      : '/ace-tracker-icon-dark.png'
   document.head.appendChild(favicon)
 }
 

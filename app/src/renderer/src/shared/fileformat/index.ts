@@ -13,6 +13,8 @@ export {
   createEmptyPlayerTrackerDocument,
   createEmptyLiveTrackingDocument,
   createEmptyVideoAnalysisDocument,
+  createEmptyAnalysisScore,
+  normalizeVideoAnalysisDocument,
   isToolId,
   TOOL_FILE_NAMES,
 } from './tools'

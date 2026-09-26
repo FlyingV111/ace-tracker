@@ -1,9 +1,5 @@
 import type { CloudConnector } from '../types'
 
-/**
- * Paste a share / direct link. No account in Ace Tracker —
- * the user hosts the file wherever they want (Drive, Strato, …).
- */
 export const linkConnector: CloudConnector = {
   id: 'link',
   brand: 'link',

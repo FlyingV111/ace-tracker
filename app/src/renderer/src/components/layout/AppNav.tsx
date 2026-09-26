@@ -1,4 +1,9 @@
-import type { ComponentType, ReactNode } from 'react'
+import {
+  forwardRef,
+  type ComponentProps,
+  type ComponentType,
+  type ReactNode,
+} from 'react'
 import { Home } from 'lucide-react'
 import { ProfileMenu } from '@/components/layout/ProfileMenu'
 import { WorkspaceSwitcher } from '@/components/layout/WorkspaceSwitcher'
@@ -12,7 +17,7 @@ type AppNavProps = {
 }
 
 /**
- * Global top nav — same shell everywhere.
+ * Global top nav - same shell everywhere.
  *
  * | Identity (left) | Place (center) | Actions (right) |
  * | Avatar Workspace | Home + tabs / brand | Collab |
@@ -115,39 +120,27 @@ export function AppNavTabButton({
   )
 }
 
-export function AppNavIconButton({
-  active,
-  onClick,
-  'aria-expanded': ariaExpanded,
-  'aria-haspopup': ariaHaspopup,
-  'aria-label': ariaLabel,
-  title,
-  children,
-}: {
-  active?: boolean
-  onClick: () => void
-  'aria-expanded'?: boolean
-  'aria-haspopup'?: 'menu' | 'listbox' | 'dialog'
-  'aria-label'?: string
-  title?: string
-  children: ReactNode
-}) {
+export const AppNavIconButton = forwardRef<
+  HTMLButtonElement,
+  ComponentProps<'button'> & { active?: boolean }
+>(function AppNavIconButton(
+  { active, className, type = 'button', children, ...props },
+  ref,
+) {
   return (
     <button
-      type="button"
-      onClick={onClick}
-      aria-expanded={ariaExpanded}
-      aria-haspopup={ariaHaspopup}
-      aria-label={ariaLabel}
-      title={title}
+      ref={ref}
+      type={type}
       className={cn(
         'flex size-9 shrink-0 items-center justify-center rounded-full outline-none transition focus-visible:ring-3 focus-visible:ring-ring/50',
         active
           ? 'bg-muted text-foreground'
           : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground',
+        className,
       )}
+      {...props}
     >
       {children}
     </button>
   )
-}
+})

@@ -3,11 +3,8 @@ import {
   HIDRIVE_CONNECTOR_ID,
   type HiDriveConfig,
 } from '../hidrive-config'
+import { downloadHiDriveFile } from '../hidrive-api'
 
-/**
- * Status is computed when listing providers — see getHiDriveConnector().
- * This constant is the base definition.
- */
 export const hidriveConnectorBase: CloudConnector = {
   id: HIDRIVE_CONNECTOR_ID,
   brand: 'webdav',
@@ -26,6 +23,14 @@ export const hidriveConnectorBase: CloudConnector = {
   },
 }
 
+function localPathToFileUrl(localPath: string): string {
+  const normalized = localPath.replace(/\\/g, '/')
+  if (/^[a-zA-Z]:\//.test(normalized)) {
+    return `file:///${normalized}`
+  }
+  return normalized.startsWith('/') ? `file://${normalized}` : `file:///${normalized}`
+}
+
 export function hidriveConnectorFor(config: HiDriveConfig): CloudConnector {
   return {
     ...hidriveConnectorBase,
@@ -37,6 +42,12 @@ export function hidriveConnectorFor(config: HiDriveConfig): CloudConnector {
       en: config.connected
         ? `Connected as ${config.username}${config.shareUrl ? ` · share saved` : ''}.`
         : hidriveConnectorBase.description.en,
+    },
+    resolveMedia: async ({ remoteId }) => {
+      const fileName = remoteId.split('/').filter(Boolean).pop() || 'video.bin'
+      const result = await downloadHiDriveFile(config, remoteId, fileName)
+      if (!result.ok) throw new Error(result.error)
+      return { localUrl: localPathToFileUrl(result.localPath) }
     },
   }
 }

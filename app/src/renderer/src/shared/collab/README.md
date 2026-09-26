@@ -1,7 +1,7 @@
 # Kollaboration (P2P, kostenlos)
 
 Zwei Leute arbeiten **gleichberechtigt** am offenen Projekt.
-Videos bleiben lokal / in der Nutzer-Cloud — die Session synct nur Projektdaten (JSON).
+Videos bleiben lokal / in der Nutzer-Cloud - die Session synct nur Projektdaten (JSON).
 
 ## Kein eigener Server, kein Abo
 
@@ -9,7 +9,7 @@ Videos bleiben lokal / in der Nutzer-Cloud — die Session synct nur Projektdate
 |----------|--------|--------|
 | Signaling | `wss://signaling.yjs.dev` | frei |
 | STUN/TURN | Google STUN + Open Relay (Metered) | frei (Best-Effort) |
-| Projekt-Sync | WebRTC direkt zwischen den Apps | — |
+| Projekt-Sync | WebRTC direkt zwischen den Apps | - |
 
 Du musst **nichts hosten und nichts bezahlen**. Match-Inhalt liegt nicht bei Ace Tracker.
 

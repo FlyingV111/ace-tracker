@@ -7,7 +7,8 @@ import type {
   ProjectToolDocuments,
   SyncDocument,
   ToolId,
-} from '../types'
+  VideoAnalysisDocument,
+} from '../core/types'
 import {
   createEmptyMediaManifest,
   isMediaManifest,
@@ -16,6 +17,7 @@ import { buildReadme, toAceprojFileName } from './schema'
 import {
   createEmptyToolDocuments,
   isToolId,
+  normalizeVideoAnalysisDocument,
   TOOL_FILE_NAMES,
 } from './tools'
 
@@ -32,17 +34,6 @@ function isProjectDocument(value: unknown): value is ProjectDocument {
     !!doc.teams?.home &&
     !!doc.teams?.away &&
     !!doc.lineups
-  )
-}
-
-function isSyncDocument(value: unknown): value is SyncDocument {
-  if (!value || typeof value !== 'object') return false
-  const sync = value as SyncDocument
-  return (
-    sync.version === 1 &&
-    Array.isArray(sync.cameras) &&
-    Array.isArray(sync.anchors) &&
-    Array.isArray(sync.clipOrder)
   )
 }
 
@@ -80,7 +71,7 @@ async function readJson(
 
 function resolveTools(
   project: ProjectDocument,
-  sync: SyncDocument | undefined,
+  sync: SyncDocument | VideoAnalysisDocument | undefined,
   parsedTools: Partial<ProjectToolDocuments> | undefined,
 ): ProjectToolDocuments {
   return createEmptyToolDocuments({
@@ -174,21 +165,19 @@ export async function unpackAceproj(
   if (isLiveTrackingDocument(liveRaw)) {
     parsedTools['live-tracking'] = liveRaw
   }
-  if (isSyncDocument(videoRaw)) {
-    parsedTools['video-analysis'] = videoRaw
+  const videoNormalized = normalizeVideoAnalysisDocument(videoRaw)
+  if (videoNormalized) {
+    parsedTools['video-analysis'] = videoNormalized
   }
 
-  const sync = isSyncDocument(syncRaw)
-    ? syncRaw
-    : isSyncDocument(videoRaw)
-      ? videoRaw
-      : undefined
+  const syncNormalized =
+    normalizeVideoAnalysisDocument(syncRaw) ?? videoNormalized ?? undefined
 
-  if (!sync && !parsedTools['video-analysis']) {
+  if (!syncNormalized && !parsedTools['video-analysis']) {
     // Allow empty video analysis for brand-new tool-file projects
   }
 
-  const tools = resolveTools(project, sync, parsedTools)
+  const tools = resolveTools(project, syncNormalized, parsedTools)
   const lastToolId =
     sessionRaw &&
     typeof sessionRaw === 'object' &&

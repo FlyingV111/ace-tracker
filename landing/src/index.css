@@ -68,7 +68,7 @@ body {
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -76,53 +76,40 @@ body {
   }
 }
 
-@keyframes fade-in {
+@keyframes panel-in {
   from {
     opacity: 0;
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
-  }
-}
-
-@keyframes float-soft {
-  0%,
-  100% {
     transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
   }
 }
 
 .anim-rise {
-  animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: rise 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .anim-rise-1 {
-  animation-delay: 0.08s;
+  animation-delay: 0.07s;
 }
 
 .anim-rise-2 {
-  animation-delay: 0.16s;
+  animation-delay: 0.14s;
 }
 
 .anim-rise-3 {
-  animation-delay: 0.24s;
+  animation-delay: 0.21s;
 }
 
-.anim-fade {
-  animation: fade-in 1s ease both;
-}
-
-.anim-float {
-  animation: float-soft 7s ease-in-out infinite;
+.anim-panel {
+  animation: panel-in 0.28s ease-out both;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .anim-rise,
-  .anim-fade,
-  .anim-float {
+  .anim-panel {
     animation: none;
   }
 }

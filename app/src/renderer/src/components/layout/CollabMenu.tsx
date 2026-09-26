@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useState, type SubmitEvent } from 'react'
 import { Copy, Link2, Users } from 'lucide-react'
 import { AppNavIconButton } from '@/components/layout/AppNav'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { parseFriendLink, useCollab } from '@/shared'
 import { useLocales } from '@/locales'
 import { projectMessages } from '@/locales/pages/project'
@@ -37,18 +47,6 @@ export function CollabMenu() {
   const [busy, setBusy] = useState(false)
   const [testText, setTestText] = useState('')
   const [copied, setCopied] = useState<'room' | 'pass' | 'link' | null>(null)
-  const rootRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!menuOpen) return
-    function onPointerDown(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setMenuOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', onPointerDown)
-    return () => document.removeEventListener('mousedown', onPointerDown)
-  }, [menuOpen])
 
   useEffect(() => {
     if (!copied) return
@@ -82,7 +80,7 @@ export function CollabMenu() {
     setDialogOpen(true)
   }
 
-  async function onJoin(event: FormEvent) {
+  async function onJoin(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     setJoinError(null)
     const trimmed = joinCode.trim()
@@ -110,7 +108,6 @@ export function CollabMenu() {
     if (!open) {
       setMode('idle')
       setJoinError(null)
-      // keep session alive when closing dialog — only leave via button
     }
   }
 
@@ -128,7 +125,7 @@ export function CollabMenu() {
       await navigator.clipboard.writeText(value)
       setCopied(kind)
     } catch {
-      // Clipboard can fail in some Electron contexts — ignore quietly.
+      // Clipboard can fail in some Electron contexts - ignore quietly.
     }
   }
 
@@ -145,60 +142,56 @@ export function CollabMenu() {
 
   return (
     <>
-      <div ref={rootRef} className="relative">
-        <AppNavIconButton
-          active={active || menuOpen}
-          aria-expanded={menuOpen}
-          aria-haspopup="menu"
-          aria-label={t('collabMenu')}
-          title={t('collabMenu')}
-          onClick={() => setMenuOpen((value) => !value)}
+      <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+        <DropdownMenuTrigger asChild>
+          <AppNavIconButton
+            active={active || menuOpen}
+            aria-label={t('collabMenu')}
+            title={t('collabMenu')}
+          >
+            <Users className="size-4" />
+          </AppNavIconButton>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          className="w-[min(18rem,calc(100vw-2rem))] p-2"
         >
-          <Users className="size-4" />
-        </AppNavIconButton>
-
-        {menuOpen ? (
-          <div className="absolute top-full right-0 z-50 mt-1.5 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-border bg-background p-2 shadow-lg">
-            <div className="px-3 py-2.5">
-              <p className="text-sm font-semibold">{t('collabTitle')}</p>
-              <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-                {statusLabel}
-              </p>
-            </div>
-            <div className="space-y-1 border-t border-border pt-2">
-              <button
-                type="button"
-                onClick={() => void openCreateSession()}
-                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium outline-none transition hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50"
-              >
-                <Users className="size-3.5 shrink-0 text-muted-foreground" />
-                {t('collabCreateSession')}
-              </button>
-              <button
-                type="button"
-                onClick={openJoinSession}
-                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm outline-none transition hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50"
-              >
-                <Link2 className="size-3.5 shrink-0 text-muted-foreground" />
-                {t('collabJoinSession')}
-              </button>
-              {session ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMenuOpen(false)
-                    setDialogOpen(true)
-                    setMode('host')
-                  }}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm outline-none transition hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50"
-                >
-                  {t('collabShowCodes')}
-                </button>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-      </div>
+          <DropdownMenuLabel className="px-3 py-2.5">
+            <p className="text-sm font-semibold text-foreground">
+              {t('collabTitle')}
+            </p>
+            <p className="mt-0.5 text-[11px] font-normal leading-relaxed text-muted-foreground">
+              {statusLabel}
+            </p>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onSelect={() => void openCreateSession()}
+            className="gap-2.5 px-3 py-2.5 font-medium"
+          >
+            <Users className="size-3.5 shrink-0 text-muted-foreground" />
+            {t('collabCreateSession')}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={openJoinSession}
+            className="gap-2.5 px-3 py-2.5"
+          >
+            <Link2 className="size-3.5 shrink-0 text-muted-foreground" />
+            {t('collabJoinSession')}
+          </DropdownMenuItem>
+          {session ? (
+            <DropdownMenuItem
+              onSelect={() => {
+                setDialogOpen(true)
+                setMode('host')
+              }}
+              className="gap-2.5 px-3 py-2.5"
+            >
+              {t('collabShowCodes')}
+            </DropdownMenuItem>
+          ) : null}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <Dialog open={dialogOpen} onOpenChange={(open) => void onDialogChange(open)}>
         <DialogContent className="sm:max-w-md">
@@ -209,30 +202,38 @@ export function CollabMenu() {
                 <DialogDescription>{t('collabJoinHint')}</DialogDescription>
               </DialogHeader>
 
-              <label className="block space-y-1.5">
-                <span className="text-xs text-muted-foreground">
+              <div className="space-y-1.5">
+                <Label
+                  htmlFor="collab-room"
+                  className="text-xs font-normal text-muted-foreground"
+                >
                   {t('collabRoom')}
-                </span>
-                <input
+                </Label>
+                <Input
+                  id="collab-room"
                   value={joinCode}
                   onChange={(event) => setJoinCode(event.target.value)}
                   placeholder={t('collabRoomPlaceholder')}
                   autoFocus
-                  className="h-10 w-full rounded-lg border border-border bg-background px-3.5 font-mono text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                  className="h-10 font-mono"
                 />
-              </label>
+              </div>
 
-              <label className="block space-y-1.5">
-                <span className="text-xs text-muted-foreground">
+              <div className="space-y-1.5">
+                <Label
+                  htmlFor="collab-pass"
+                  className="text-xs font-normal text-muted-foreground"
+                >
                   {t('collabPass')}
-                </span>
-                <input
+                </Label>
+                <Input
+                  id="collab-pass"
                   value={joinPass}
                   onChange={(event) => setJoinPass(event.target.value)}
                   placeholder={t('collabPassPlaceholder')}
-                  className="h-10 w-full rounded-lg border border-border bg-background px-3.5 font-mono text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                  className="h-10 font-mono"
                 />
-              </label>
+              </div>
 
               {joinError || error ? (
                 <p className="text-xs text-destructive">
@@ -306,11 +307,11 @@ export function CollabMenu() {
                   {t('collabTestHint')}
                 </p>
                 <div className="flex flex-col gap-2 sm:flex-row">
-                  <input
+                  <Input
                     value={testText}
                     onChange={(event) => setTestText(event.target.value)}
                     placeholder={t('collabTestPlaceholder')}
-                    className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                    className="h-9 min-w-0 flex-1"
                   />
                   <Button
                     type="button"

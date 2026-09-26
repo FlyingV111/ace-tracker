@@ -1,18 +1,10 @@
-/**
- * HiDrive (Strato) account config — stored only on this PC.
- * Browse/download uses WebDAV: https://webdav.hidrive.strato.com
- */
-
 export const HIDRIVE_WEBDAV_URL = 'https://webdav.hidrive.strato.com'
 export const HIDRIVE_CONNECTOR_ID = 'hidrive'
 
 export type HiDriveConfig = {
   username: string
-  /** Kept in local app settings only — never uploaded by Ace Tracker. */
   password: string
-  /** WebDAV folder to open first, e.g. /users/name/Team/Videos */
   rootPath: string
-  /** Optional public share, e.g. https://my.hidrive.com/share/s30a2on76h */
   shareUrl: string
   connected: boolean
 }
@@ -25,7 +17,6 @@ export const DEFAULT_HIDRIVE_CONFIG: HiDriveConfig = {
   connected: false,
 }
 
-/** https://my.hidrive.com/share/s30a2on76h → full share URL */
 export function normalizeHiDriveShareUrl(input: string): string {
   const trimmed = input.trim()
   if (!trimmed) return ''
@@ -41,10 +32,6 @@ export function normalizeHiDriveShareUrl(input: string): string {
   return trimmed
 }
 
-/**
- * From browser URL hash:
- * https://my.hidrive.com/#$/users/flyingv111/Volleyball/... → /users/flyingv111/...
- */
 export function pathFromHiDriveBrowserUrl(input: string): string | null {
   const trimmed = input.trim()
   const hashMatch = trimmed.match(/#\$?(\/users\/[^?#]+)/i)

@@ -23,7 +23,7 @@ type TestPingListener = (ping: CollabTestPing) => void
 
 /**
  * Room id for signaling: derived from code + passphrase so both secrets are needed.
- * Signaling never sees your project JSON — only this opaque id + WebRTC handshake.
+ * Signaling never sees your project JSON - only this opaque id + WebRTC handshake.
  */
 export async function collabRoomId(
   roomCode: string,
@@ -41,7 +41,7 @@ export async function collabRoomId(
 
 /**
  * Peer-to-peer session: WebRTC via y-webrtc + Yjs.
- * Match data stays on the peers — signaling is handshake only.
+ * Match data stays on the peers - signaling is handshake only.
  */
 export class CollabSession {
   readonly info: CollabSessionInfo
@@ -142,7 +142,7 @@ export class CollabSession {
         signaling,
         maxConns: 8,
         filterBcConns: true,
-        // Free public STUN/TURN — no self-hosted infra, no Ace Tracker bill
+        // Free public STUN/TURN - no self-hosted infra, no Ace Tracker bill
         peerOpts: {
           config: {
             iceServers: DEFAULT_ICE_SERVERS,

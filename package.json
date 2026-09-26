@@ -2,13 +2,15 @@
   "name": "ace-tracker",
   "private": true,
   "version": "0.1.0",
-  "description": "Ace Tracker monorepo — desktop app and landing page",
+  "description": "Ace Tracker monorepo - desktop app and landing page",
   "workspaces": [
     "app",
     "landing"
   ],
   "scripts": {
-    "dev": "npm run dev -w @ace-tracker/app",
+    "postinstall": "node node_modules/electron/install.js",
+    "dev": "npm run ensure-electron && npm run dev -w @ace-tracker/app",
+    "ensure-electron": "node -e \"const fs=require('fs');const p=require('path');const d=p.dirname(require.resolve('electron/package.json'));if(!fs.existsSync(p.join(d,'path.txt'))){require('child_process').execFileSync(process.execPath,[p.join(d,'install.js')],{stdio:'inherit'})}\"",
     "dev:web": "npm run dev:web -w @ace-tracker/app",
     "dev:landing": "npm run dev -w @ace-tracker/landing",
     "build": "npm run build -w @ace-tracker/app",

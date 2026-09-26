@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type SubmitEvent } from 'react'
 import {
   ImagePlus,
   Monitor,
@@ -10,6 +10,7 @@ import {
   UserRound,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   fileToAvatarDataUrl,
   hidriveConnectorFor,
@@ -33,7 +44,6 @@ export function ProfileMenu({
   compact = false,
 }: {
   menuAlign?: 'start' | 'end'
-  /** Avatar-only trigger for the global nav. */
   compact?: boolean
 }) {
   const { settings, updateProfile, setTheme, deleteAllData, locale } =
@@ -47,7 +57,6 @@ export function ProfileMenu({
   const [avatarDataUrl, setAvatarDataUrl] = useState(settings.avatarDataUrl)
   const [isPlayer, setIsPlayer] = useState(settings.isPlayer)
   const [avatarError, setAvatarError] = useState<string | null>(null)
-  const rootRef = useRef<HTMLDivElement>(null)
   const avatarRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -63,17 +72,6 @@ export function ProfileMenu({
     settings.isPlayer,
   ])
 
-  useEffect(() => {
-    if (!open) return
-    function onPointerDown(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', onPointerDown)
-    return () => document.removeEventListener('mousedown', onPointerDown)
-  }, [open])
-
   async function onAvatarFile(file: File | undefined) {
     if (!file) return
     setAvatarError(null)
@@ -84,7 +82,7 @@ export function ProfileMenu({
     }
   }
 
-  function onSave(event: FormEvent) {
+  function onSave(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!displayName.trim()) return
     updateProfile({
@@ -116,36 +114,25 @@ export function ProfileMenu({
 
   return (
     <>
-      <div ref={rootRef} className="relative">
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-haspopup="menu"
-          aria-label={label}
-          title={label}
-          onClick={() => setOpen((value) => !value)}
-          className={
-            compact
-              ? 'flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted ring-1 ring-foreground/10 outline-none transition hover:ring-foreground/25 focus-visible:ring-3 focus-visible:ring-ring/50'
-              : 'flex max-w-[12rem] items-center gap-2.5 rounded-lg py-1.5 pl-2.5 pr-1.5 text-left outline-none transition hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50'
-          }
-        >
-          {compact ? null : (
-            <span className="min-w-0 truncate text-sm font-medium">{label}</span>
-          )}
-          {compact ? (
-            settings.avatarDataUrl ? (
-              <img
-                src={settings.avatarDataUrl}
-                alt=""
-                className="size-full object-cover"
-              />
-            ) : (
-              <UserRound className="size-4 text-muted-foreground" />
-            )
-          ) : (
-            <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted ring-1 ring-foreground/10">
-              {settings.avatarDataUrl ? (
+      <DropdownMenu open={open} onOpenChange={setOpen}>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label={label}
+            title={label}
+            className={
+              compact
+                ? 'flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted ring-1 ring-foreground/10 outline-none transition hover:ring-foreground/25 focus-visible:ring-3 focus-visible:ring-ring/50'
+                : 'flex max-w-[12rem] items-center gap-2.5 rounded-lg py-1.5 pl-2.5 pr-1.5 text-left outline-none transition hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50'
+            }
+          >
+            {compact ? null : (
+              <span className="min-w-0 truncate text-sm font-medium">
+                {label}
+              </span>
+            )}
+            {compact ? (
+              settings.avatarDataUrl ? (
                 <img
                   src={settings.avatarDataUrl}
                   alt=""
@@ -153,93 +140,99 @@ export function ProfileMenu({
                 />
               ) : (
                 <UserRound className="size-4 text-muted-foreground" />
-              )}
-            </span>
-          )}
-        </button>
-
-        {open ? (
-          <div
-            className={`absolute top-full z-50 mt-1.5 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-border bg-background p-2 shadow-lg ${
-              menuAlign === 'end' ? 'right-0' : 'left-0'
-            }`}
+              )
+            ) : (
+              <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted ring-1 ring-foreground/10">
+                {settings.avatarDataUrl ? (
+                  <img
+                    src={settings.avatarDataUrl}
+                    alt=""
+                    className="size-full object-cover"
+                  />
+                ) : (
+                  <UserRound className="size-4 text-muted-foreground" />
+                )}
+              </span>
+            )}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align={menuAlign}
+          className="w-[min(18rem,calc(100vw-2rem))] p-2"
+        >
+          <DropdownMenuLabel className="px-3 py-2.5">
+            <p className="truncate text-sm font-semibold text-foreground">
+              {label}
+            </p>
+            <p className="mt-0.5 text-[11px] font-normal text-muted-foreground">
+              {t('profileMenuHint')}
+            </p>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onSelect={openProfileDialog}
+            className="gap-2.5 px-3 py-2.5"
           >
-            <div className="space-y-1">
-              <div className="px-3 py-2.5">
-                <p className="truncate text-sm font-semibold">{label}</p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  {t('profileMenuHint')}
-                </p>
-              </div>
-              <div className="border-t border-border pt-2">
-                <button
-                  type="button"
-                  onClick={openProfileDialog}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm outline-none transition hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50"
-                >
-                  <UserRound className="size-3.5 shrink-0 text-muted-foreground" />
-                  {t('profileEditMenu')}
-                </button>
-                <button
-                  type="button"
-                  onClick={openSettingsDialog}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm outline-none transition hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50"
-                >
-                  <Settings2 className="size-3.5 shrink-0 text-muted-foreground" />
-                  {t('settingsMenu')}
-                </button>
-              </div>
-              <div className="border-t border-border px-2 pt-2">
-                <div
-                  role="group"
-                  aria-label={t('themeGroup')}
-                  className="grid grid-cols-3 rounded-lg bg-muted/60 p-1"
-                >
-                  <button
-                    type="button"
-                    aria-pressed={theme === 'light'}
-                    onClick={() => setTheme('light')}
-                    className={`flex items-center justify-center gap-1 rounded-md px-2 py-2.5 text-xs font-medium outline-none transition focus-visible:ring-3 focus-visible:ring-ring/50 ${
-                      theme === 'light'
-                        ? 'bg-background text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <Sun className="size-3.5" />
-                    {t('themeLightShort')}
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={theme === 'system'}
-                    onClick={() => setTheme('system')}
-                    className={`flex items-center justify-center gap-1 rounded-md px-2 py-2.5 text-xs font-medium outline-none transition focus-visible:ring-3 focus-visible:ring-ring/50 ${
-                      theme === 'system'
-                        ? 'bg-background text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <Monitor className="size-3.5" />
-                    {t('themeSystemShort')}
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={theme === 'dark'}
-                    onClick={() => setTheme('dark')}
-                    className={`flex items-center justify-center gap-1 rounded-md px-2 py-2.5 text-xs font-medium outline-none transition focus-visible:ring-3 focus-visible:ring-ring/50 ${
-                      theme === 'dark'
-                        ? 'bg-background text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <Moon className="size-3.5" />
-                    {t('themeDarkShort')}
-                  </button>
-                </div>
-              </div>
+            <UserRound className="size-3.5 shrink-0 text-muted-foreground" />
+            {t('profileEditMenu')}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={openSettingsDialog}
+            className="gap-2.5 px-3 py-2.5"
+          >
+            <Settings2 className="size-3.5 shrink-0 text-muted-foreground" />
+            {t('settingsMenu')}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <div className="px-2 pt-1">
+            <div
+              role="group"
+              aria-label={t('themeGroup')}
+              className="grid grid-cols-3 rounded-lg bg-muted/60 p-1"
+            >
+              <button
+                type="button"
+                aria-pressed={theme === 'light'}
+                onClick={() => setTheme('light')}
+                className={`flex items-center justify-center gap-1 rounded-md px-2 py-2.5 text-xs font-medium outline-none transition focus-visible:ring-3 focus-visible:ring-ring/50 ${
+                  theme === 'light'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Sun className="size-3.5" />
+                {t('themeLightShort')}
+              </button>
+              <button
+                type="button"
+                aria-pressed={theme === 'system'}
+                onClick={() => setTheme('system')}
+                className={`flex items-center justify-center gap-1 rounded-md px-2 py-2.5 text-xs font-medium outline-none transition focus-visible:ring-3 focus-visible:ring-ring/50 ${
+                  theme === 'system'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Monitor className="size-3.5" />
+                {t('themeSystemShort')}
+              </button>
+              <button
+                type="button"
+                aria-pressed={theme === 'dark'}
+                onClick={() => setTheme('dark')}
+                className={`flex items-center justify-center gap-1 rounded-md px-2 py-2.5 text-xs font-medium outline-none transition focus-visible:ring-3 focus-visible:ring-ring/50 ${
+                  theme === 'dark'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Moon className="size-3.5" />
+                {t('themeDarkShort')}
+              </button>
             </div>
           </div>
-        ) : null}
-      </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
         <DialogContent className="sm:max-w-md">
@@ -304,24 +297,27 @@ export function ProfileMenu({
               <p className="text-xs text-destructive">{avatarError}</p>
             ) : null}
 
-            <label className="block space-y-1.5">
-              <span className="text-xs text-muted-foreground">
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="profile-display-name"
+                className="text-xs font-normal text-muted-foreground"
+              >
                 {t('profileName')}
-              </span>
-              <input
+              </Label>
+              <Input
+                id="profile-display-name"
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
                 autoFocus
-                className="h-10 w-full rounded-lg border border-border bg-background px-3.5 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="h-10"
               />
-            </label>
+            </div>
 
             <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border px-3.5 py-3">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={isPlayer}
-                onChange={(event) => setIsPlayer(event.target.checked)}
-                className="mt-0.5 size-4 rounded border-border"
+                onCheckedChange={(checked) => setIsPlayer(checked === true)}
+                className="mt-0.5"
               />
               <span className="text-sm">{t('profileIsPlayer')}</span>
             </label>

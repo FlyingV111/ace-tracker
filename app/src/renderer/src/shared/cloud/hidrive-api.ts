@@ -72,7 +72,6 @@ export async function downloadHiDriveFile(
   })
 }
 
-/** Attach a HiDrive file reference to the project (does not copy the 11GB file into .aceproj). */
 export function mediaFromHiDriveFile(input: {
   remotePath: string
   fileName: string

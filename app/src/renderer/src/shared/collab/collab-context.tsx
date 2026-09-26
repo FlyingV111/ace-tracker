@@ -52,7 +52,7 @@ function isProjectTools(value: unknown): value is ProjectToolDocuments {
 
 /**
  * Owns the live P2P session and mirrors project JSON between peers.
- * Videos are never synced — only references in `media`.
+ * Videos are never synced - only references in `media`.
  */
 export function CollabProvider({ children }: { children: ReactNode }) {
   const { activeProject, settings, applyCollabSnapshot } = useWorkspace()
@@ -170,7 +170,7 @@ export function CollabProvider({ children }: { children: ReactNode }) {
     try {
       await leave()
       if (!activeProjectRef.current) {
-        throw new Error('Kein Projekt geöffnet.')
+        throw new Error('Kein Spiel geöffnet.')
       }
       const next = CollabSession.host()
       await wireSession(next)
@@ -189,7 +189,7 @@ export function CollabProvider({ children }: { children: ReactNode }) {
       try {
         await leave()
         if (!activeProjectRef.current) {
-          throw new Error('Kein Projekt geöffnet.')
+          throw new Error('Kein Spiel geöffnet.')
         }
         const next = CollabSession.join(roomCode, passphrase)
         await wireSession(next)

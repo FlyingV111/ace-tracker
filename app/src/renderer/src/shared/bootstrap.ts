@@ -1,7 +1,7 @@
-import { loadUserSettingsAsync } from './settings'
-import { loadWorkspacesAsync } from './workspaces'
-import { loadProjectsAsync } from './aceproj/storage'
-import { migrateLocalStorageToAppDataIfNeeded } from './persistence'
+import { loadUserSettingsAsync } from './core/settings'
+import { loadWorkspacesAsync } from './workspace/store'
+import { loadProjectsAsync } from './fileformat/storage'
+import { migrateLocalStorageToAppDataIfNeeded } from './core/persistence'
 
 export async function bootstrapAppPersistence(): Promise<void> {
   window.electronAPI?.setSplashStatus?.('Einstellungen werden geladen…')
@@ -10,7 +10,7 @@ export async function bootstrapAppPersistence(): Promise<void> {
   window.electronAPI?.setSplashStatus?.('Workspaces werden geladen…')
   await loadWorkspacesAsync()
 
-  window.electronAPI?.setSplashStatus?.('Projekte werden geladen…')
+  window.electronAPI?.setSplashStatus?.('Spiele werden geladen…')
   await loadProjectsAsync()
 
   window.electronAPI?.setSplashStatus?.('Profil wird geladen…')
